@@ -184,30 +184,34 @@ Countermeasures:
 ```
 LearningLandscape/
 ├── README.md
+├── train.py                        # [DONE] Main entry point: multi-timepoint training
+├── toymodel_proliferation.py       # [DONE] Augmented SDE with log-weight (analytic)
+├── toymodel_jax.ipynb              # [DONE] Basic SDE landscape + MMD inference
 ├── models/
-│   ├── potential.py        # Φ_nn: MLP with spectral norm + softplus + confinement
-│   ├── tilt.py             # Ψ: Linear(d_signal → d_latent)
-│   ├── proliferation.py    # R_θ: small MLP with tanh-bounded output
-│   ├── noise.py            # σ: scalar (optional: state-dependent MLP)
-│   └── autoencoder.py      # Deterministic encoder-decoder
+│   ├── __init__.py                 # [DONE] WaddingtonModel + create_model() factory
+│   ├── potential.py                # [DONE] Φ_nn: MLP (2→16→32→32→16→1) + softplus + confinement
+│   ├── tilt.py                     # [DONE] Ψ: Linear(d_signal → d_latent)
+│   ├── proliferation.py            # [DONE] R_θ: MLP (2→16→16→1), unconstrained output
+│   ├── noise.py                    # [DONE] σ: log-space scalar or state-dependent MLP
+│   └── autoencoder.py              # [PLANNED] Deterministic encoder-decoder
 ├── simulator/
-│   ├── sde_solver.py       # Augmented Euler-Maruyama/Heun with log-weight tracking
-│   ├── weighted_mmd.py     # Multi-bandwidth Gaussian kernel weighted MMD
-│   └── resampling.py       # Systematic resampling for weight degeneracy
+│   ├── __init__.py                 # [DONE]
+│   ├── sde_solver.py               # [DONE] Euler-Maruyama with logsumexp + transition sim
+│   ├── weighted_mmd.py             # [DONE] Weighted MMD + L_conservation + L1 grad reg
+│   └── resampling.py               # [PLANNED] Systematic resampling for weight degeneracy
 ├── training/
-│   ├── trainer.py          # Alternating optimization loop + early stopping
-│   ├── losses.py           # L_MMD + L_rec + L_mass + L_reg composition
-│   └── data_loader.py      # (t_i, X_i, t_{i+1}, X_{i+1}, s(t)) format
+│   ├── __init__.py                 # [DONE]
+│   ├── trainer.py                  # [DONE] Multi-timepoint transition matching + early stopping
+│   └── data_loader.py              # [DONE] Multi-timepoint + single-timepoint generators
 ├── analysis/
-│   ├── bifurcation.py      # Pseudo-arclength continuation
-│   ├── ess_monitor.py      # Effective sample size tracking
-│   └── visualization.py    # Landscape, trajectories, bifurcation diagrams
+│   ├── __init__.py                 # [DONE]
+│   ├── bifurcation.py              # [DONE] Equilibrium finding + Hessian classification
+│   ├── visualization.py            # [DONE] Landscape, particles, training curves, comparison
+│   └── ess_monitor.py              # [PLANNED] Effective sample size tracking
 ├── experiments/
-│   ├── synthetic/           # Ground-truth benchmark experiments
-│   └── mesc/                # Mouse ESC in vitro application
-└── notebooks/
-    ├── toymodel_jax.ipynb           # [DONE] Basic SDE landscape + MMD inference
-    └── toymodel_proliferation.py    # [DONE] Augmented SDE with log-weight scheme
+│   ├── synthetic/                   # [PLANNED] Ground-truth benchmark experiments
+│   └── mesc/                        # [PLANNED] Mouse ESC in vitro application
+└── notebooks/                       # [PLANNED] Analysis notebooks
 ```
 
 ### Current codebase status
@@ -216,12 +220,19 @@ LearningLandscape/
 |--------|--------|-------------|
 | Parametric potential + SDE + MMD | ✅ Done | `toymodel_jax.ipynb` |
 | Augmented SDE with log-weights + weighted MMD | ✅ Done | `toymodel_proliferation.py` |
-| Neural network potential (Equinox) | 🔲 Next | Replace analytic formula with MLP |
-| Learnable R_θ | 🔲 Planned | Replace fixed Gaussian with bounded MLP |
-| Multi-timepoint training | 🔲 Planned | Short-time transition matching |
-| Signal-dependent tilt Ψ(s) | 🔲 Planned | Linear map A·s |
-| Autoencoder (encoder-decoder) | 🔲 Planned | Deterministic AE |
-| Bifurcation analysis | 🔲 Planned | Pseudo-arclength continuation |
+| Neural network potential (Equinox) | ✅ Done | `models/potential.py` — MLP (2→16→32→32→16→1) + softplus + confinement |
+| Learnable R_θ | ✅ Done | `models/proliferation.py` — MLP (2→16→16→1), unconstrained output |
+| Learnable noise σ | ✅ Done | `models/noise.py` — log-space scalar or state-dependent MLP |
+| Tilt Ψ(s) module | ✅ Done | `models/tilt.py` — Linear(d_signal → d_latent), not yet tested with signal data |
+| Multi-timepoint training | ✅ Done | `training/trainer.py` — short-time transition matching over consecutive pairs |
+| L1 gradient reg + logsumexp normalization | ✅ Done | `simulator/weighted_mmd.py`, `simulator/sde_solver.py` |
+| Target data resampling by weights | ✅ Done | `training/data_loader.py` — multinomial resampling at snapshots |
+| Bifurcation analysis | ✅ Done | `analysis/bifurcation.py` — equilibrium finding + Hessian classification |
+| Signal-dependent training | 🔲 Planned | Tilt module exists but training loop not yet signal-aware |
+| Autoencoder (encoder-decoder) | 🔲 Planned | Deterministic AE for high-dimensional gene expression |
+| Spectral normalization on Φ_nn | 🔲 Planned | Currently using plain Xavier init without spectral norm |
+| tanh-bounded R_θ output | 🔲 Planned | Currently unconstrained; needs clamping to [β_min, β_max] |
+| ESS monitoring | 🔲 Planned | Not yet implemented |
 
 ---
 
@@ -264,6 +275,41 @@ Upgrade the toy model from analytic potential to neural network:
 - Verify: forward SDE integration runs without NaN for 1000 steps before
   any training begins.
 
+> **Implementation notes (2026-03-31):**
+>
+> Completed the Equinox refactoring. The analytic potential
+> `H = -(y-a)x² + exp(b)x⁴ - cy + exp(d)y⁴` was replaced by a neural network
+> `Φ_nn` (MLP 2→16→32→32→16→1, softplus activation, Xavier uniform init) with a
+> quartic confinement term `C_conf·‖z‖⁴` (`C_conf = 0.01`) in `models/potential.py`.
+> The proliferation rate was replaced by a learnable MLP `R_θ` (2→16→16→1,
+> softplus hidden, unconstrained linear output) in `models/proliferation.py`.
+> Noise is parameterized in log-space (`σ = exp(log_σ)`) for guaranteed positivity
+> in `models/noise.py`. All modules are Equinox `eqx.Module` subclasses.
+>
+> The full model is assembled via `create_model()` in `models/__init__.py` as a
+> `WaddingtonModel` dataclass holding potential, tilt, proliferation, and noise
+> sub-modules.
+>
+> **First run (single-timepoint, `train.py`)**: 500 epochs, `optax.adam(lr=1e-3)`,
+> fixed PRNG key, 1000 particles, dt=0.005, 400 steps (T=2.0). Loss function:
+> `L = L_MMD(weighted) + 0.1·L_conservation + 0.01·L_grad_reg(L2)`.
+> The ground-truth data was generated using the analytic potential with a Gaussian
+> proliferation rate `R(x,y) = 0.5·exp(-dist²/1.28) - 0.1` centered at origin.
+>
+> **Results**: Loss decreased from 1.04 to 0.011 (MMD: 0.011). The learned
+> potential correctly captured the bifurcation topology with two symmetric basins.
+> The learned R(z) showed proliferation near the progenitor region and decay
+> elsewhere. **However, σ converged to 0.556 instead of the true value 1.0.**
+> This is the expected Φ/σ² scale degeneracy: the NN potential has unconstrained
+> absolute scale, so the optimizer finds a valid but non-unique solution where
+> both Φ and σ are jointly scaled down while preserving their ratio.
+>
+> **Deviations from plan**: (1) Spectral normalization on Φ_nn layers is not yet
+> implemented — using plain Xavier init. (2) R_θ output is unconstrained (no tanh
+> clamping yet). (3) Using `optax.adam` instead of `optax.adamw` — weight decay
+> not yet added. These are deferred to the synthetic benchmark phase (Week 4)
+> where their impact can be measured via ablation.
+
 **Week 3 — Multi-timepoint training with short-time transition matching**
 
 Critical upgrade from current single-snapshot comparison:
@@ -281,6 +327,109 @@ Critical upgrade from current single-snapshot comparison:
   learn R from density changes between consecutive snapshots.
 - Implement ESS monitoring: log effective sample size at each training step;
   flag if ESS < 0.1 × N_particles.
+
+> **Implementation notes (2026-03-31):**
+>
+> Implemented multi-timepoint short-time transition matching. The data loader
+> (`training/data_loader.py`) generates ground-truth snapshots at user-specified
+> times (e.g., t = [0.0, 0.5, 1.0, 1.5, 2.0]) and constructs consecutive
+> transition pairs in the Howe & Mani format `D = {(t_i, X_i, t_{i+1}, X_{i+1})}`.
+> A new `simulate_transition()` function in `simulator/sde_solver.py` simulates
+> a short-time segment from observed positions X_i with fresh log-weights (S₀=0),
+> implementing the weight-reset-at-boundary strategy.
+>
+> The trainer (`training/trainer.py`) pre-compiles a separate JIT-traced loss
+> function per unique segment length via `make_transition_loss()`, then sums the
+> weighted MMD + conservation + gradient reg losses across all 4 transitions per
+> epoch. Each transition independently accumulates proliferation weights over its
+> own interval only.
+>
+> **Additional changes in this iteration:**
+> - Gradient regularization switched from **L2 to L1 (Lasso)**:
+>   `(1/N) Σ ‖∇R(z_i)‖₁` — encourages sparsity in the proliferation gradient
+>   field, consistent with the biological prior that R is spatially localized.
+> - Log-weight normalization switched to **explicit `jax.nn.logsumexp`**:
+>   `α_i = exp(S_i - logsumexp(S))` instead of `jax.nn.softmax(S)`. Both are
+>   mathematically equivalent, but the explicit form makes the numerical
+>   stability mechanism visible and auditable.
+>
+> **Multi-timepoint run (`train.py`)**: 500 epochs, `optax.adam(lr=1e-3)`,
+> 4 transitions of 100 steps each ([0→0.5], [0.5→1.0], [1.0→1.5], [1.5→2.0]),
+> 1000 particles, dt=0.005. Loss function:
+> `L = Σ_transitions [L_MMD(weighted) + 0.1·L_conservation + 0.01·L_grad_reg(L1)]`.
+>
+> **Results**: Total loss decreased from 1.49 to 0.04 over 500 epochs. The
+> learned potential correctly captured the two-basin bifurcation topology. The
+> learned R(z) was much flatter/sparser than the single-timepoint run, which is
+> the expected effect of L1 regularization — R is driven toward zero except where
+> density changes between consecutive snapshots demand it.
+>
+> **σ degeneracy persists**: σ converged to 0.575 (true: 1.0). Multi-timepoint
+> fitting alone does not break the Φ/σ² scale degeneracy because the NN potential
+> can still freely rescale. This confirms the theoretical prediction: breaking
+> this degeneracy requires either (a) anchoring the potential scale via spectral
+> normalization, (b) velocity/RNA-velocity data providing absolute drift
+> magnitude, or (c) explicit constraints on Φ's range. This is a priority issue
+> for the Week 4 synthetic benchmark.
+>
+> **ESS monitoring**: not yet implemented. Deferred to Week 4.
+>
+> **Deviations from plan**: signal `s(t)` is not yet passed through the
+> transition pairs — the tilt module exists but the training loop runs with
+> `signal=None`. This is acceptable for the current signal-free synthetic
+> benchmark and will be activated when signal-dependent data is introduced.
+>
+> ---
+>
+> **Hyperparameter tuning experiments (2026-03-31):**
+>
+> Conducted a systematic series of experiments to improve R(z) recovery and σ
+> convergence. Each change was applied incrementally.
+>
+> | Run | λ_cons | λ_reg | Particles | Intervals | Epochs | lr | σ_learned | MMD_final | R quality |
+> |-----|--------|-------|-----------|-----------|--------|----|-----------|-----------|-----------|
+> | 1 (baseline) | 0.1 | 0.01 | 1000 | 4×100 steps | 500 | 1e-3 | 0.575 | 0.040 | Flat / near-zero |
+> | 2 (lower λ_reg) | 0.1 | 0.001 | 1000 | 4×100 steps | 500 | 1e-3 | 0.575 | 0.040 | Slight structure, asymmetric |
+> | 3 (longer T) | 0.1 | 0.001 | 1000 | 3×200 steps | 1000 | 1e-3 | 0.597 | 0.022 | Asymmetric left-right |
+> | 4 (higher λ_cons + lr) | 1.0 | 0.001 | 1000 | 3×200 steps | 1000 | 3e-3 | 0.782 | 0.012 | Asymmetric, σ improving |
+> | 5 (more particles + lower λ_reg) | 1.0 | 0.0001 | 2000 | 3×200 steps | 2000 | 3e-3 | 0.855 | 0.005 | Asymmetric, similar pattern |
+> | 6 (+ resampled targets) | 1.0 | 0.0001 | 2000 | 3×200 steps | 2000 | 3e-3 | 0.824 | 0.006 | Asymmetric, same issue |
+> | 7 (+ stronger R: β=2, δ=0.3) | 1.0 | 0.0001 | 2000 | 3×200 steps | 2000 | 3e-3 | 0.874 | 0.006 | Asymmetric, same pattern |
+>
+> **Key finding — target data resampling bug (fixed in Run 6):**
+> The original data loader stored target positions X1 WITHOUT resampling by
+> proliferation weights. Since R only affects log-weights S (not positions), the
+> target X1 positions were identical whether R existed or not. The weighted MMD
+> compared simulation weights against uniform target weights, giving R nothing to
+> fit. Fixed by adding multinomial resampling at each snapshot: particles are
+> redrawn proportional to their accumulated weights, encoding R's density effect
+> into the position distribution — mimicking how scRNA-seq observes more cells
+> where proliferation is high.
+>
+> **Persistent issue — drift-reaction degeneracy in R recovery:**
+> Across all 7 runs, the learned R(z) shows a left-right asymmetric pattern
+> (positive on the left basin, negative on the right) instead of the ground-truth
+> symmetric Gaussian centered at (0, -1). The magnitude of learned R (±0.06 to
+> ±0.12) is much smaller than the true R (peak 0.4 to 1.7). This confirms the
+> **drift-reaction degeneracy** described in the mathematical framework: the NN
+> potential Φ has enough capacity to explain position density changes without
+> R's help, so R is relegated to acting as a small drift correction for Φ's
+> imperfections rather than capturing the true proliferation field.
+>
+> **σ convergence improved significantly:** From 0.575 (Run 1) to 0.874 (Run 7).
+> The main driver was increasing λ_cons from 0.1 to 1.0 and using higher learning
+> rate (3e-3). The conservation constraint prevents R from absorbing global scale
+> information that should belong to σ.
+>
+> **Implications for Week 4 and beyond:**
+> - The R recovery problem is fundamentally an identifiability issue, not a
+>   hyperparameter tuning issue. Additional constraints are needed:
+>   (a) Spectral normalization on Φ_nn to bound its Lipschitz constant
+>   (b) tanh-bounded R output to prevent it from acting as drift correction
+>   (c) Potentially a two-phase training: first fit Φ without R, then freeze Φ
+>       and fit R to the residual density changes
+> - The resampling fix in the data loader is critical for any future work with
+>   proliferation — without it, R is completely unobservable from position data.
 
 **Week 4 — Synthetic benchmark: binary choice + proliferation**
 
