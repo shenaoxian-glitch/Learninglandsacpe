@@ -197,7 +197,7 @@ LearningLandscape/
 ├── simulator/
 │   ├── __init__.py                 # [DONE]
 │   ├── sde_solver.py               # [DONE] Euler-Maruyama with logsumexp + transition sim
-│   ├── weighted_mmd.py             # [DONE] Weighted MMD + L_conservation + L1 grad reg
+│   ├── weighted_mmd.py             # [DONE] Weighted MMD + L_mass matching + L1 sparsity on R
 │   └── resampling.py               # [PLANNED] Systematic resampling for weight degeneracy
 ├── training/
 │   ├── __init__.py                 # [DONE]
@@ -225,7 +225,7 @@ LearningLandscape/
 | Learnable noise σ | ✅ Done | `models/noise.py` — log-space scalar or state-dependent MLP |
 | Tilt Ψ(s) module | ✅ Done | `models/tilt.py` — Linear(d_signal → d_latent), not yet tested with signal data |
 | Multi-timepoint training | ✅ Done | `training/trainer.py` — short-time transition matching over consecutive pairs |
-| L1 gradient reg + logsumexp normalization | ✅ Done | `simulator/weighted_mmd.py`, `simulator/sde_solver.py` |
+| L1 sparsity on R + mass matching loss + logsumexp | ✅ Done | `simulator/weighted_mmd.py`, `simulator/sde_solver.py` |
 | Target data resampling by weights | ✅ Done | `training/data_loader.py` — multinomial resampling at snapshots |
 | Bifurcation analysis | ✅ Done | `analysis/bifurcation.py` — equilibrium finding + Hessian classification |
 | Signal-dependent training | 🔲 Planned | Tilt module exists but training loop not yet signal-aware |
@@ -238,9 +238,9 @@ LearningLandscape/
 
 ## Research Roadmap
 
-### Phase 1: Foundations and neural architecture (Weeks 1–4)
+### Phase 1: Foundations and neural architecture (Steps 1–5)
 
-**Week 1 — Literature and mathematical framework**
+**Step 1 — Literature and mathematical framework**
 
 Required reading (priority order):
 
@@ -264,7 +264,7 @@ Supplementary reading:
 Deliverable: 2–3 page mathematical framework document with complete model
 equations, loss function, and regularization terms.
 
-**Week 2 — Equinox refactoring with architectural smoothness guarantees**
+**Step 2 — Equinox refactoring with architectural smoothness guarantees**
 
 Upgrade the toy model from analytic potential to neural network:
 
@@ -307,10 +307,10 @@ Upgrade the toy model from analytic potential to neural network:
 > **Deviations from plan**: (1) Spectral normalization on Φ_nn layers is not yet
 > implemented — using plain Xavier init. (2) R_θ output is unconstrained (no tanh
 > clamping yet). (3) Using `optax.adam` instead of `optax.adamw` — weight decay
-> not yet added. These are deferred to the synthetic benchmark phase (Week 4)
+> not yet added. These are deferred to the synthetic benchmark phase (Step 5)
 > where their impact can be measured via ablation.
 
-**Week 3 — Multi-timepoint training with short-time transition matching**
+**Step 3 — Multi-timepoint training with short-time transition matching**
 
 Critical upgrade from current single-snapshot comparison:
 
@@ -370,9 +370,9 @@ Critical upgrade from current single-snapshot comparison:
 > this degeneracy requires either (a) anchoring the potential scale via spectral
 > normalization, (b) velocity/RNA-velocity data providing absolute drift
 > magnitude, or (c) explicit constraints on Φ's range. This is a priority issue
-> for the Week 4 synthetic benchmark.
+> for the Step 5 synthetic benchmark.
 >
-> **ESS monitoring**: not yet implemented. Deferred to Week 4.
+> **ESS monitoring**: not yet implemented. Deferred to Step 5.
 >
 > **Deviations from plan**: signal `s(t)` is not yet passed through the
 > transition pairs — the tilt module exists but the training loop runs with
@@ -421,7 +421,7 @@ Critical upgrade from current single-snapshot comparison:
 > rate (3e-3). The conservation constraint prevents R from absorbing global scale
 > information that should belong to σ.
 >
-> **Implications for Week 4 and beyond:**
+> **Implications for Step 4 and beyond:**
 > - The R recovery problem is fundamentally an identifiability issue, not a
 >   hyperparameter tuning issue. Additional constraints are needed:
 >   (a) Spectral normalization on Φ_nn to bound its Lipschitz constant
@@ -431,7 +431,70 @@ Critical upgrade from current single-snapshot comparison:
 > - The resampling fix in the data loader is critical for any future work with
 >   proliferation — without it, R is completely unobservable from position data.
 
-**Week 4 — Synthetic benchmark: binary choice + proliferation**
+**Step 4 — Fix fundamental loss function bugs (Q1–Q4)**
+
+Code review after the Step 3 hyperparameter experiments revealed four interacting
+bugs that created a "complete information blockade on R," making the proliferation
+rate mathematically unrecoverable regardless of hyperparameter choices.
+
+> **Implementation notes (2026-04-01):**
+>
+> **Q1 — MMD normalization erases absolute mass (FIXED):**
+> The weighted MMD normalizes α to sum=1 via logsumexp, discarding the absolute
+> mass amplification factor m = mean(exp(S)). If m=2 (population doubled) or
+> m=0.5 (population halved), the normalized α is identical — R's overall level
+> is unobservable from MMD alone. **Fix**: added `mass_matching_loss` in
+> `simulator/weighted_mmd.py`: `L_mass = (logsumexp(S) - log(N) - log_m_obs)²`,
+> where `log_m_obs` is the ground-truth log mass ratio computed per transition
+> interval in `training/data_loader.py`. `simulate_transition` in
+> `simulator/sde_solver.py` now returns raw `final_S` alongside normalized `alpha`.
+>
+> **Q2 — Conservation loss forces E[R]=0 (REMOVED):**
+> The conservation loss `L_cons = |Σ αᵢ R(zᵢ)|²` penalizes net population
+> change, forcing R toward zero-mean. This is correct only for systems at
+> population steady state — our ground truth has strong net growth (β=2.0,
+> δ=0.3). With λ_cons=1.0, this was the dominant force crushing R. **Fix**:
+> `conservation_loss` removed entirely from `weighted_mmd.py` and `trainer.py`.
+> Replaced by `mass_matching_loss` (Q1 fix) which constrains R's level to match
+> observed growth, not to zero.
+>
+> **Q3 — Gradient regularizer is Total Variation, not L1 sparsity (FIXED):**
+> `gradient_reg_loss` computed `mean(‖∇ᵤR‖₁)` — the L1 norm of R's *gradient*,
+> i.e., Total Variation. This penalizes R having spatial *variation*, not R being
+> *nonzero*. A constant R≡c has zero TV penalty regardless of |c|. The correct
+> biological prior is L1 sparsity on R *values*: R should be exactly zero across
+> most of state space. **Fix**: replaced with `sparsity_reg_loss` computing
+> `mean(|R(zᵢ)|)` — true L1 (Lasso) on R values.
+>
+> **Q4 — Φ/σ² scale degeneracy via confinement (FIXED):**
+> The fixed confinement term `c_conf·‖z‖⁴` in the potential creates an implicit
+> scale anchor. With `c_conf=0.01`, the confinement already prevents particle
+> escape, so σ converges to whatever value balances the NN potential against
+> confinement — not the true σ. **Fix**: switched optimizer from `optax.adam`
+> to `optax.adamw(weight_decay=1e-4)`. Weight decay acts as soft L2
+> regularization on Φ_nn weights, penalizing large potential values and providing
+> a softer Lipschitz constraint. This gives σ a wider range of valid solutions
+> closer to the true value. (Full spectral normalization deferred to a later step.)
+>
+> **Additional fix — comparison.png target panel background:**
+> The target panel in `plot_comparison` was incorrectly showing the *learned*
+> potential as background. Fixed: `plot_comparison` now accepts a
+> `target_potential_fn` parameter; the left (target) panel uses the analytical
+> ground-truth potential, and the right (learned) panel uses `model.potential`.
+>
+> **Loss function summary (before → after):**
+> ```
+> Before: L = L_MMD + λ_cons·|Σ αᵢ Rᵢ|² + λ_reg·mean(‖∇R‖₁)
+> After:  L = L_MMD + λ_mass·(log m_sim - log m_obs)² + λ_sparse·mean(|R|)
+> ```
+>
+> The three R-related bugs (Q1+Q2+Q3) formed a mathematical optimum at R≡0:
+> - Q1: MMD can't see R's level → no gradient signal to increase |R|
+> - Q2: Conservation loss actively penalizes any nonzero E[R]
+> - Q3: TV regularizer doesn't penalize constant R, but Q2 already pushes R→0
+> Together, R was trapped at zero regardless of hyperparameters.
+
+**Step 5 — Synthetic benchmark: binary choice + proliferation**
 
 Ground-truth validation with known Φ* and R*:
 
@@ -447,9 +510,9 @@ Validation metrics:
 - σ convergence.
 - **ESS trajectory** — must remain above 10% throughout integration.
 
-### Phase 2: Manifold learning and lineage-anchored validation (Weeks 5–10)
+### Phase 2: Manifold learning and lineage-anchored validation (Steps 5–10)
 
-**Weeks 5–6 — Autoencoder implementation with alternating training**
+**Steps 5–6 — Autoencoder implementation with alternating training**
 
 Network: deterministic autoencoder (not VAE — stochasticity is already provided
 by the SDE; VAE adds posterior collapse risk without benefit).
@@ -473,7 +536,7 @@ crashing the SDE solver at fixed step sizes.
   learning rate. Monitor whether fine-tuning preserves the manifold topology
   established in Phase A; if it collapses, increase λ_rec.
 
-**Weeks 7–8 — High-dimensional synthetic validation**
+**Steps 7–8 — High-dimensional synthetic validation**
 
 Test the full end-to-end pipeline:
 
@@ -486,10 +549,10 @@ Compare against baselines: PCA + PLNN, PCA + uPLNN, AE + PLNN (no proliferation)
 
 Verify Phase C fine-tuning does not destroy the manifold structure from Phase A.
 
-**Weeks 9–10 — Lineage-tracing validation (strategically moved forward)**
+**Steps 9–10 — Lineage-tracing validation (strategically moved forward)**
 
 > **Major revision from original plan**: lineage-tracing validation is moved
-> from Week 15 to Week 9. Without early validation against ground-truth
+> from Step 15 to Step 9. Without early validation against ground-truth
 > proliferation data, any results on unlabeled data (e.g., mESC) lack
 > credibility for the proliferation component.
 
@@ -506,9 +569,9 @@ Validation: compare inferred R_θ(x) against known ground-truth proliferation
 rates. If R_θ fails to recover known growth patterns here, the method cannot
 be trusted on datasets without lineage information.
 
-### Phase 3: Real data application (Weeks 11–16)
+### Phase 3: Real data application (Steps 11–16)
 
-**Weeks 11–12 — mESC in vitro data (Sáez et al., Cell Systems, 2022)**
+**Steps 11–12 — mESC in vitro data (Sáez et al., Cell Systems, 2022)**
 
 Apply uPLNN to the same dataset used by Howe & Mani for direct comparison:
 
@@ -526,7 +589,7 @@ Key comparisons against PLNN:
 - Bifurcation structure under signal variation.
 - Inferred R(z): does it localize to biologically expected regions?
 
-**Weeks 13–14 — Bifurcation analysis and biological interpretation**
+**Steps 13–14 — Bifurcation analysis and biological interpretation**
 
 - Implement pseudo-arclength continuation on the learned Φ.
 - Plot fold curves in signal space; compare with Sáez et al.
@@ -534,7 +597,7 @@ Key comparisons against PLNN:
   at terminal fates? Signal-dependent (e.g., FGF promoting proliferation)?
 - This analysis produces the central figures of the paper.
 
-**Weeks 15–16 — Ablation studies**
+**Steps 15–16 — Ablation studies**
 
 Systematic ablations required for publication:
 
@@ -545,11 +608,11 @@ Systematic ablations required for publication:
 5. Sensitivity to sampling density (cf. Howe & Mani, Fig. 6).
 6. ESS statistics across all experiments.
 
-### Phase 4: Paper writing and submission (Weeks 17–24)
+### Phase 4: Paper writing and submission (Steps 17–24)
 
-**Weeks 17–18** — Complete all figures to publication quality.
+**Steps 17–18** — Complete all figures to publication quality.
 
-**Weeks 19–22** — Write manuscript. Proposed structure:
+**Steps 19–22** — Write manuscript. Proposed structure:
 
 ```
 I.   Introduction
@@ -577,7 +640,7 @@ V.   Discussion
 VI.  Methods (detailed)
 ```
 
-**Weeks 23–24** — Revision and submission.
+**Steps 23–24** — Revision and submission.
 
 Target journals (by priority):
 
@@ -640,7 +703,7 @@ Target journals (by priority):
 
 | Risk | Probability | Mitigation |
 |------|:-----------:|------------|
-| Φ–R identifiability failure | Medium | L1 on R + L_mass + lineage validation at Week 9 |
+| Φ–R identifiability failure | Medium | L1 on R + L_mass + lineage validation at Step 9 |
 | SDE solver divergence (NaN) | Medium | Spectral norm + softplus + bounded R output + weight decay |
 | AE + SDE joint training collapse | Medium | Alternating optimization (Phase A→B→C); monitor manifold topology |
 | Log-weight overflow | Medium | Log-sum-exp; tanh-bounded R; ESS monitoring; optional resampling |

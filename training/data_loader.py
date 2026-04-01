@@ -146,17 +146,45 @@ def generate_multi_timepoint_data(
         snapshots.append((t, resampled_pos, resampled_alpha))
 
     # Build transition pairs: (t_i, X_i) -> (t_{i+1}, X_{i+1})
+    # For each transition, compute the ground-truth log mass ratio log_m_obs.
+    # This is log(mean(exp(S_interval))) where S_interval is the log-weight
+    # accumulated within that interval only (not cumulative from t=0).
+    # Since simulate_transition resets S=0 at each interval start, log_m_obs
+    # must also reflect per-interval accumulation.
     transitions = []
     for i in range(len(snapshots) - 1):
         t0, X0, _ = snapshots[i]
         t1, X1, _ = snapshots[i + 1]
         n_steps_segment = int(round((t1 - t0) / dt))
+
+        # Compute per-interval log mass ratio from ground-truth R
+        # Approximate: run a mini-simulation of R along the interval using
+        # the snapshot positions (held fixed) to accumulate S over the interval.
+        # S_i = integral_t0^t1 R(z_i(t)) dt ≈ R(z_i_start) * (t1-t0) for short intervals.
+        # For accuracy, use the step-level data if available.
+        if i == 0:
+            # First interval: S accumulated from t=0 to snapshot_times[0]
+            step_idx = snapshot_step_indices[0] - 1
+            interval_S = all_S[step_idx]  # cumulative S from t=0
+        else:
+            # Later intervals: S accumulated within interval only
+            # S_interval = S(t_{i+1}) - S(t_i)
+            prev_idx = snapshot_step_indices[i - 1] - 1
+            curr_idx = snapshot_step_indices[i] - 1
+            interval_S = all_S[curr_idx] - all_S[prev_idx]
+
+        # log_m_obs = log(mean(exp(S_interval)))
+        # Use logsumexp for numerical stability
+        N = interval_S.shape[0]
+        log_m_obs = float(jax.nn.logsumexp(interval_S) - jnp.log(N))
+
         transitions.append({
             't0': t0,
             't1': t1,
             'X0': X0,
             'X1': X1,
             'n_steps': n_steps_segment,
+            'log_m_obs': log_m_obs,
         })
 
     return transitions, snapshots

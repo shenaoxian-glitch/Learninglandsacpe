@@ -36,45 +36,63 @@ def weighted_mmd_loss(x_sim, alpha, x_obs):
     return term_xx + term_yy - 2 * term_xy
 
 
-def conservation_loss(model, z, alpha, signal=None):
+def mass_matching_loss(final_S, log_m_obs):
     """
-    Population conservation penalty: L_cons = |int R(x) rho(x) dx|^2
+    Mass matching loss: penalizes mismatch between simulated and observed
+    absolute mass amplification over a transition interval.
 
-    Approximated as |sum_i alpha_i R(z_i)|^2.
-    Penalizes net population growth/decay, encouraging steady state.
+    L_mass = (log_m_sim - log_m_obs)^2
+
+    where log_m_sim = logsumexp(S) - log(N) is the log of the mean weight
+    (i.e., average mass amplification factor), and log_m_obs is the ground-truth
+    log mass ratio computed from the analytical proliferation.
+
+    This restores the absolute mass information that normalized MMD erases (Q1),
+    making R's overall level observable.
+
+    Args:
+        final_S: (N,) raw log-weights from SDE integration (NOT normalized)
+        log_m_obs: scalar, ground-truth log(mean(exp(S))) for this interval
+    """
+    N = final_S.shape[0]
+    log_m_sim = jax.nn.logsumexp(final_S) - jnp.log(N)
+    return (log_m_sim - log_m_obs) ** 2
+
+
+def sparsity_reg_loss(model, z, signal=None):
+    """
+    L1 sparsity regularization on R values: (1/N) sum_i |R(z_i)|
+
+    Encourages R to be exactly zero across most of the state space (Q3).
+    This is the correct biological prior: proliferation/apoptosis is highly
+    localized. Unlike gradient_reg (|nabla R|, i.e. Total Variation), this
+    penalizes R being nonzero anywhere, not just R having spatial variation.
     """
     if signal is not None and model.proliferation.d_signal > 0:
         R_vals = jax.vmap(lambda zi: model.proliferation(zi, signal))(z)
     else:
         R_vals = jax.vmap(lambda zi: model.proliferation(zi))(z)
-    return (jnp.sum(alpha * R_vals)) ** 2
+    return jnp.mean(jnp.abs(R_vals))
 
 
-def gradient_reg_loss(model, z, signal=None):
-    """
-    L1 (Lasso) gradient regularization on R: (1/N) sum_i ||nabla_z R(z_i)||_1
-
-    Encourages sparsity in the proliferation gradient field.
-    """
-    if signal is not None and model.proliferation.d_signal > 0:
-        grad_fn = jax.vmap(jax.grad(lambda zi: model.proliferation(zi, signal)))
-    else:
-        grad_fn = jax.vmap(jax.grad(lambda zi: model.proliferation(zi)))
-    grad_R = grad_fn(z)
-    return jnp.mean(jnp.sum(jnp.abs(grad_R), axis=-1))
-
-
-def total_loss(model, x_sim, alpha, x_obs, z_for_reg,
-               lam_cons=0.1, lam_reg=0.01, signal=None):
+def total_loss(model, x_sim, alpha, x_obs, z_for_reg, final_S, log_m_obs,
+               lam_mass=1.0, lam_sparse=0.01, signal=None):
     """
     Combined loss:
-        L = L_MMD(weighted) + lam_cons * L_conservation + lam_reg * ||nabla R||_1
+        L = L_MMD(weighted) + lam_mass * L_mass + lam_sparse * L_sparsity
+
+    - L_MMD: weighted MMD between simulated and observed positions
+    - L_mass: mass matching loss restoring absolute growth info (Q1 fix)
+    - L_sparsity: L1 on R values encouraging spatial sparsity (Q3 fix)
+
+    Conservation loss (Q2) is deliberately removed: it forces E[R]=0,
+    which is wrong for systems with net growth/death.
 
     Returns:
         total: scalar loss
-        aux: (l_mmd, l_cons, l_reg) for logging
+        aux: (l_mmd, l_mass, l_sparse) for logging
     """
     l_mmd = weighted_mmd_loss(x_sim, alpha, x_obs)
-    l_cons = conservation_loss(model, z_for_reg, alpha, signal)
-    l_reg = gradient_reg_loss(model, z_for_reg, signal)
-    return l_mmd + lam_cons * l_cons + lam_reg * l_reg, (l_mmd, l_cons, l_reg)
+    l_mass = mass_matching_loss(final_S, log_m_obs)
+    l_sparse = sparsity_reg_loss(model, z_for_reg, signal)
+    return l_mmd + lam_mass * l_mass + lam_sparse * l_sparse, (l_mmd, l_mass, l_sparse)

@@ -4,7 +4,7 @@ import equinox as eqx
 import optax
 
 from simulator.sde_solver import simulate_transition
-from simulator.weighted_mmd import weighted_mmd_loss, conservation_loss, gradient_reg_loss
+from simulator.weighted_mmd import weighted_mmd_loss, mass_matching_loss, sparsity_reg_loss
 
 
 # ======================================================================
@@ -13,7 +13,7 @@ from simulator.weighted_mmd import weighted_mmd_loss, conservation_loss, gradien
 # simulate from X_i, compare against X_{i+1} via weighted MMD.
 # ======================================================================
 
-def make_transition_loss(n_steps, dt, lam_cons, lam_reg):
+def make_transition_loss(n_steps, dt, lam_mass, lam_sparse):
     """
     Build a loss function for a single transition (t_i, X_i) -> (t_{i+1}, X_{i+1}).
 
@@ -21,22 +21,22 @@ def make_transition_loss(n_steps, dt, lam_cons, lam_reg):
     """
 
     @eqx.filter_jit
-    def transition_loss(model, X0, X1, key):
+    def transition_loss(model, X0, X1, log_m_obs, key):
         """
         Simulate from X0 for n_steps, compare result against X1.
 
         Returns:
             total: scalar loss
-            aux: (l_mmd, l_cons, l_reg)
+            aux: (l_mmd, l_mass, l_sparse)
         """
-        final_z, alpha = simulate_transition(model, X0, n_steps, dt, key)
+        final_z, final_S, alpha = simulate_transition(model, X0, n_steps, dt, key)
 
         l_mmd = weighted_mmd_loss(final_z, alpha, X1)
-        l_cons = conservation_loss(model, final_z, alpha)
-        l_reg = gradient_reg_loss(model, final_z)
+        l_mass = mass_matching_loss(final_S, log_m_obs)
+        l_sparse = sparsity_reg_loss(model, final_z)
 
-        total = l_mmd + lam_cons * l_cons + lam_reg * l_reg
-        return total, (l_mmd, l_cons, l_reg)
+        total = l_mmd + lam_mass * l_mass + lam_sparse * l_sparse
+        return total, (l_mmd, l_mass, l_sparse)
 
     return transition_loss
 
@@ -47,45 +47,50 @@ def make_multi_step(optimizer, transitions, dt, loss_config):
 
     Args:
         optimizer: optax optimizer
-        transitions: list of dicts with 'X0', 'X1', 'n_steps'
+        transitions: list of dicts with 'X0', 'X1', 'n_steps', 'log_m_obs'
         dt: integration step size
-        loss_config: dict with 'lam_cons', 'lam_reg'
+        loss_config: dict with 'lam_mass', 'lam_sparse'
     """
-    lam_cons = loss_config['lam_cons']
-    lam_reg = loss_config['lam_reg']
+    lam_mass = loss_config['lam_mass']
+    lam_sparse = loss_config['lam_sparse']
 
     # Pre-build a loss fn for each transition segment (different n_steps => different traces)
     unique_steps = {}
     for tr in transitions:
         ns = tr['n_steps']
         if ns not in unique_steps:
-            unique_steps[ns] = make_transition_loss(ns, dt, lam_cons, lam_reg)
+            unique_steps[ns] = make_transition_loss(ns, dt, lam_mass, lam_sparse)
 
     # Map each transition to its loss fn
     loss_fns = [unique_steps[tr['n_steps']] for tr in transitions]
+
+    # Extract log_m_obs as JAX arrays (static per transition)
+    log_m_obs_list = [jnp.array(tr['log_m_obs']) for tr in transitions]
 
     @eqx.filter_jit
     def step(model, opt_state, key):
         def loss_fn(model):
             total_loss = 0.0
             total_mmd = 0.0
-            total_cons = 0.0
-            total_reg = 0.0
+            total_mass = 0.0
+            total_sparse = 0.0
 
             keys = jax.random.split(key, len(transitions))
             for i, (tr, lfn) in enumerate(zip(transitions, loss_fns)):
-                loss_i, (mmd_i, cons_i, reg_i) = lfn(
-                    model, tr['X0'], tr['X1'], keys[i]
+                loss_i, (mmd_i, mass_i, sparse_i) = lfn(
+                    model, tr['X0'], tr['X1'], log_m_obs_list[i], keys[i]
                 )
                 total_loss = total_loss + loss_i
                 total_mmd = total_mmd + mmd_i
-                total_cons = total_cons + cons_i
-                total_reg = total_reg + reg_i
+                total_mass = total_mass + mass_i
+                total_sparse = total_sparse + sparse_i
 
-            return total_loss, (total_mmd, total_cons, total_reg)
+            return total_loss, (total_mmd, total_mass, total_sparse)
 
         (loss, aux), grads = eqx.filter_value_and_grad(loss_fn, has_aux=True)(model)
-        updates, new_opt_state = optimizer.update(grads, opt_state)
+        updates, new_opt_state = optimizer.update(
+            grads, opt_state, eqx.filter(model, eqx.is_array)
+        )
         new_model = eqx.apply_updates(model, updates)
         return new_model, new_opt_state, loss, aux
 
@@ -109,10 +114,10 @@ def train(
 
     Args:
         model: WaddingtonModel
-        transitions: list of dicts {'t0', 't1', 'X0', 'X1', 'n_steps'}
+        transitions: list of dicts {'t0', 't1', 'X0', 'X1', 'n_steps', 'log_m_obs'}
         optimizer: optax optimizer
         dt: integration step size
-        loss_config: dict with 'lam_cons', 'lam_reg'
+        loss_config: dict with 'lam_mass', 'lam_sparse'
         n_epochs: max iterations
         key: PRNG key
         use_fresh_keys: resplit key each epoch
@@ -134,8 +139,10 @@ def train(
         f"[{tr['t0']:.2f}->{tr['t1']:.2f}]({tr['n_steps']})" for tr in transitions
     )
     print(f"Training on {n_trans} transitions: {interval_str}")
+    for tr in transitions:
+        print(f"  log_m_obs[{tr['t0']:.1f}->{tr['t1']:.1f}] = {tr['log_m_obs']:.4f}")
 
-    history = {'loss': [], 'mmd': [], 'cons': [], 'reg': []}
+    history = {'loss': [], 'mmd': [], 'mass': [], 'sparse': []}
     best_loss = float('inf')
     wait = 0
     sim_key = key
@@ -144,15 +151,15 @@ def train(
         if use_fresh_keys:
             key, sim_key = jax.random.split(key)
 
-        model, opt_state, loss, (l_mmd, l_cons, l_reg) = step_fn(
+        model, opt_state, loss, (l_mmd, l_mass, l_sparse) = step_fn(
             model, opt_state, sim_key
         )
 
         loss_val = float(loss)
         history['loss'].append(loss_val)
         history['mmd'].append(float(l_mmd))
-        history['cons'].append(float(l_cons))
-        history['reg'].append(float(l_reg))
+        history['mass'].append(float(l_mass))
+        history['sparse'].append(float(l_sparse))
 
         if epoch % print_every == 0:
             sigma_str = ""
@@ -160,8 +167,8 @@ def train(
                 sigma_str = f", sigma={float(jnp.exp(model.noise.log_sigma)):.3f}"
             print(
                 f"Epoch {epoch:4d}: Loss={loss_val:.5f} "
-                f"(MMD={float(l_mmd):.5f}, Cons={float(l_cons):.5f}, "
-                f"Reg={float(l_reg):.5f}){sigma_str}"
+                f"(MMD={float(l_mmd):.5f}, Mass={float(l_mass):.5f}, "
+                f"Sparse={float(l_sparse):.5f}){sigma_str}"
             )
 
         # Early stopping

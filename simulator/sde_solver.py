@@ -89,6 +89,7 @@ def simulate_transition(model, z0, n_steps, dt, key, signal=None):
 
     Returns:
         final_z: (N, d)
+        final_S: (N,) raw log-weights (for mass matching loss)
         alpha:   (N,) normalized weights via logsumexp
     """
     N = z0.shape[0]
@@ -122,7 +123,7 @@ def simulate_transition(model, z0, n_steps, dt, key, signal=None):
     (final_z, final_S), _ = jax.lax.scan(scan_body, (z0, S0), step_keys)
 
     alpha = _normalize_log_weights(final_S)
-    return final_z, alpha
+    return final_z, final_S, alpha
 
 
 def simulate_with_history(model, z0, n_steps, dt, key, signals=None):

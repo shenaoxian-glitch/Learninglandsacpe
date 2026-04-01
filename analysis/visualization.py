@@ -113,10 +113,26 @@ def plot_training_history(history, title="Training Loss"):
     axes[1].set_yscale('log'); axes[1].set_title('MMD Loss')
     axes[1].set_xlabel('Epoch'); axes[1].legend()
 
-    axes[2].plot(history['cons'], label='Conservation', color='tab:orange')
-    axes[2].plot(history['reg'], label='Grad Reg', color='tab:green')
-    axes[2].set_yscale('log'); axes[2].set_title('Regularisers')
-    axes[2].set_xlabel('Epoch'); axes[2].legend()
+    # Plot mass matching and sparsity regularization
+    ax2 = axes[2]
+    has_mass = 'mass' in history
+    has_sparse = 'sparse' in history
+    # Backward compatible: also check old keys
+    has_cons = 'cons' in history
+    has_reg = 'reg' in history
+
+    if has_mass:
+        ax2.plot(history['mass'], label='Mass Matching', color='tab:orange')
+    elif has_cons:
+        ax2.plot(history['cons'], label='Conservation', color='tab:orange')
+
+    if has_sparse:
+        ax2.plot(history['sparse'], label='L1 Sparsity', color='tab:green')
+    elif has_reg:
+        ax2.plot(history['reg'], label='Grad Reg', color='tab:green')
+
+    ax2.set_yscale('log'); ax2.set_title('Regularisers')
+    ax2.set_xlabel('Epoch'); ax2.legend()
 
     fig.suptitle(title)
     plt.tight_layout()
@@ -128,31 +144,78 @@ def plot_training_history(history, title="Training Loss"):
 # ------------------------------------------------------------------
 
 def plot_comparison(target_pos, target_alpha, sim_pos, sim_alpha,
-                    model=None, xlim=(-5, 5), ylim=(-2, 4)):
-    """Side-by-side scatter: target data vs learned simulation with shared colorscale."""
+                    model=None, target_potential_fn=None,
+                    xlim=(-5, 5), ylim=(-2, 4)):
+    """
+    Side-by-side scatter: target data vs learned simulation with shared colorscale.
+
+    Args:
+        target_pos: (N, 2) target positions
+        target_alpha: (N,) target weights
+        sim_pos: (N, 2) simulated positions
+        sim_alpha: (N,) simulated weights
+        model: WaddingtonModel (used for learned potential background on right panel)
+        target_potential_fn: callable z->(scalar) for ground-truth potential
+            background on left panel. If None and model is provided, uses
+            model.potential for both panels (old behavior).
+        xlim, ylim: plot limits
+    """
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
     # Compute shared color limits across both datasets
     all_alpha = np.concatenate([np.asarray(target_alpha), np.asarray(sim_alpha)])
     vmin, vmax = float(all_alpha.min()), float(all_alpha.max())
 
-    for ax, pos, alpha, label in [
-        (axes[0], target_pos, target_alpha, "Target (Ground Truth)"),
-        (axes[1], sim_pos, sim_alpha, "Learned Model"),
-    ]:
-        if model is not None:
-            X, Y, Z = _eval_grid(model.potential, xlim, ylim, 200)
-            ax.contourf(X, Y, Z, levels=25, cmap='viridis', alpha=0.5)
+    # Compute potential grids for both panels first, to establish shared colorscale
+    Z_target, Z_learned = None, None
+    if target_potential_fn is not None:
+        X_t, Y_t, Z_target = _eval_grid(target_potential_fn, xlim, ylim, 200)
+    if model is not None:
+        X_l, Y_l, Z_learned = _eval_grid(model.potential, xlim, ylim, 200)
 
-        sc = ax.scatter(
-            np.asarray(pos[:, 0]), np.asarray(pos[:, 1]),
-            c=np.asarray(alpha), cmap='hot_r', s=15, alpha=0.8, edgecolors='none',
-            vmin=vmin, vmax=vmax,
-        )
-        plt.colorbar(sc, ax=ax, label=r'$\alpha$')
-        ax.set_xlabel('x'); ax.set_ylabel('y')
-        ax.set_title(label)
-        ax.set_xlim(xlim); ax.set_ylim(ylim)
+    # Shared potential colorscale across both panels
+    pot_vmin, pot_vmax = None, None
+    if Z_target is not None and Z_learned is not None:
+        pot_vmin = min(float(Z_target.min()), float(Z_learned.min()))
+        pot_vmax = max(float(Z_target.max()), float(Z_learned.max()))
+    elif Z_target is not None:
+        pot_vmin, pot_vmax = float(Z_target.min()), float(Z_target.max())
+    elif Z_learned is not None:
+        pot_vmin, pot_vmax = float(Z_learned.min()), float(Z_learned.max())
+
+    pot_levels = np.linspace(pot_vmin, pot_vmax, 26) if pot_vmin is not None else 25
+
+    # Left panel: target data with ground-truth potential background
+    ax = axes[0]
+    if Z_target is not None:
+        ax.contourf(X_t, Y_t, Z_target, levels=pot_levels, cmap='viridis', alpha=0.5)
+    elif Z_learned is not None:
+        ax.contourf(X_l, Y_l, Z_learned, levels=pot_levels, cmap='viridis', alpha=0.5)
+
+    sc = ax.scatter(
+        np.asarray(target_pos[:, 0]), np.asarray(target_pos[:, 1]),
+        c=np.asarray(target_alpha), cmap='hot_r', s=15, alpha=0.8, edgecolors='none',
+        vmin=vmin, vmax=vmax,
+    )
+    plt.colorbar(sc, ax=ax, label=r'$\alpha$')
+    ax.set_xlabel('x'); ax.set_ylabel('y')
+    ax.set_title("Target (Ground Truth)")
+    ax.set_xlim(xlim); ax.set_ylim(ylim)
+
+    # Right panel: learned simulation with learned potential background
+    ax = axes[1]
+    if Z_learned is not None:
+        ax.contourf(X_l, Y_l, Z_learned, levels=pot_levels, cmap='viridis', alpha=0.5)
+
+    sc = ax.scatter(
+        np.asarray(sim_pos[:, 0]), np.asarray(sim_pos[:, 1]),
+        c=np.asarray(sim_alpha), cmap='hot_r', s=15, alpha=0.8, edgecolors='none',
+        vmin=vmin, vmax=vmax,
+    )
+    plt.colorbar(sc, ax=ax, label=r'$\alpha$')
+    ax.set_xlabel('x'); ax.set_ylabel('y')
+    ax.set_title("Learned Model")
+    ax.set_xlim(xlim); ax.set_ylim(ylim)
 
     plt.tight_layout()
     return fig

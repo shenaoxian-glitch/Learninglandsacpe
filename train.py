@@ -15,7 +15,7 @@ import jax.numpy as jnp
 import optax
 
 from models import create_model
-from training.data_loader import generate_multi_timepoint_data
+from training.data_loader import generate_multi_timepoint_data, analytical_potential
 from training.trainer import train
 from simulator.sde_solver import simulate
 from analysis.visualization import (
@@ -50,8 +50,8 @@ DT = 0.005
 N_PARTICLES = 2000
 
 LOSS_CONFIG = {
-    'lam_cons': 1.0,
-    'lam_reg': 0.0001,
+    'lam_mass': 1.0,
+    'lam_sparse': 0.0001,
 }
 
 
@@ -67,7 +67,7 @@ transitions, snapshots = generate_multi_timepoint_data(
     params=TARGET_PARAMS,
     prolif_params=PROLIF_PARAMS,
     n_particles=N_PARTICLES,
-    snapshot_times=SNAPSHOT_TIMES[1:],  # [0.5, 1.0, 1.5, 2.0]; t=0 is prepended
+    snapshot_times=SNAPSHOT_TIMES[1:],  # [1.0, 2.0, 3.0]; t=0 is prepended
     dt=DT,
     key=target_key,
     x0_mean=jnp.array([0.0, -1.0]),
@@ -77,7 +77,7 @@ transitions, snapshots = generate_multi_timepoint_data(
 print(f"  {len(snapshots)} snapshots at t = {[f'{s[0]:.1f}' for s in snapshots]}")
 print(f"  {len(transitions)} transitions:")
 for tr in transitions:
-    print(f"    [{tr['t0']:.1f} -> {tr['t1']:.1f}] ({tr['n_steps']} steps)")
+    print(f"    [{tr['t0']:.1f} -> {tr['t1']:.1f}] ({tr['n_steps']} steps, log_m_obs={tr['log_m_obs']:.4f})")
 
 
 # ==========================================================================
@@ -101,7 +101,10 @@ print("Model created.\n")
 # 4. Train with multi-timepoint short-time transition matching
 # ==========================================================================
 
-optimizer = optax.adam(learning_rate=3e-3)
+# Q4 fix: use adamw with weight decay for Lipschitz control on Phi
+# Weight decay acts as soft spectral normalization, preventing Phi from
+# freely rescaling and breaking the Phi/sigma^2 scale degeneracy.
+optimizer = optax.adamw(learning_rate=3e-3, weight_decay=1e-4)
 
 model, history = train(
     model=model,
@@ -118,6 +121,11 @@ model, history = train(
 
 sigma_learned = float(jnp.exp(model.noise.log_sigma))
 print(f"\nLearned sigma: {sigma_learned:.3f}  (true: {TARGET_PARAMS['sigma']})")
+
+# Save trained model for replotting without retraining
+import equinox as eqx
+eqx.tree_serialise_leaves("trained_model.eqx", model)
+print("Model saved to trained_model.eqx")
 
 
 # ==========================================================================
@@ -174,10 +182,15 @@ sim_z, sim_S, sim_alpha = simulate(model, z0, total_steps, DT, sim_key)
 # Final target snapshot
 _, target_final_pos, target_final_alpha = snapshots[-1]
 
+# Build ground-truth potential function for target panel background
+def target_potential_fn(z):
+    return analytical_potential(z[0], z[1], TARGET_PARAMS)
+
 fig = plot_comparison(
     target_final_pos, target_final_alpha,
     sim_z, sim_alpha,
     model=model,
+    target_potential_fn=target_potential_fn,
 )
 plt.savefig("comparison.png", dpi=150, bbox_inches='tight')
 plt.close()
