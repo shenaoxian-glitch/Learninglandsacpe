@@ -23,13 +23,14 @@ def create_model(
     sigma_init=1.0,
     use_tilt=False,
     state_dependent_noise=False,
+    beta_max=3.0,
 ):
     """Factory function to create a WaddingtonModel with all sub-modules."""
     k1, k2, k3, k4 = jax.random.split(key, 4)
 
     potential = PotentialNN(k1, d_latent=d_latent, c_conf=c_conf)
     tilt = TiltLinear(k2, d_signal=max(d_signal, 1), d_latent=d_latent) if use_tilt else None
-    proliferation = ProliferationNN(k3, d_latent=d_latent, d_signal=d_signal)
+    proliferation = ProliferationNN(k3, d_latent=d_latent, d_signal=d_signal, beta_max=beta_max)
 
     if state_dependent_noise:
         noise = NoiseNN(k4, d_latent=d_latent)

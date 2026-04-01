@@ -47,7 +47,7 @@ PROLIF_PARAMS = {
 SNAPSHOT_TIMES = [0.0, 1.0, 2.0, 3.0]
 
 DT = 0.005
-N_PARTICLES = 2000
+N_PARTICLES = 500
 
 LOSS_CONFIG = {
     'lam_mass': 1.0,
@@ -112,11 +112,11 @@ model, history = train(
     optimizer=optimizer,
     dt=DT,
     loss_config=LOSS_CONFIG,
-    n_epochs=2000,
+    n_epochs=800,
     key=jax.random.PRNGKey(42),
     use_fresh_keys=True,
-    print_every=100,
-    patience=500,
+    print_every=50,
+    patience=300,
 )
 
 sigma_learned = float(jnp.exp(model.noise.log_sigma))
