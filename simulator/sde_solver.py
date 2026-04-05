@@ -174,3 +174,70 @@ def simulate_with_history(model, z0, n_steps, dt, key, signals=None):
 
     alpha = _normalize_log_weights(final_S)
     return final_z, final_S, alpha, hist_z, hist_S
+
+
+# ======================================================================
+# Source-Death model: open system with particle queue
+# ======================================================================
+
+def simulate_open_system(model, z_init, wake_schedule, sigma, n_steps, dt, key):
+    """
+    Simulate an open system with pre-allocated particle queue.
+
+    Particles start dormant (S=-100). At scheduled steps, batches wake up:
+    their S is set to 0 and position is reset to z_init (source location).
+    All particles drift under -grad(Phi), diffuse with fixed sigma,
+    and lose weight via dS = -gamma(z) dt.
+
+    Args:
+        model: SourceDeathModel (potential + death_rate; noise not used,
+               sigma is passed explicitly as a fixed constant)
+        z_init: (N_total, d) initial positions for all particles
+                (source positions with Gaussian noise, pre-sampled)
+        wake_schedule: (N_total,) int array — step index at which each
+                       particle wakes up. Particles with wake_step > n_steps
+                       never activate.
+        sigma: float, fixed diffusion coefficient
+        n_steps: total integration steps
+        dt: step size
+        key: PRNG key
+
+    Returns:
+        final_z: (N_total, d)
+        final_S: (N_total,) raw log-weights
+        alpha:   (N_total,) normalized weights (over active particles)
+    """
+    N_total = z_init.shape[0]
+    S0 = jnp.full(N_total, -100.0)  # all dormant
+    step_keys = jax.random.split(key, n_steps)
+
+    def scan_body(carry, inputs):
+        z, S = carry
+        step_key, step_idx = inputs
+
+        # 1. Wake-up: particles whose schedule matches this step
+        is_waking = (wake_schedule == step_idx)
+        S = jnp.where(is_waking, 0.0, S)
+        z = jnp.where(is_waking[:, None], z_init, z)
+
+        # 2. Drift: -grad Phi
+        grad_phi = jax.vmap(jax.grad(lambda zi: model.potential(zi)))(z)
+        drift = -grad_phi
+
+        # 3. Diffusion with fixed sigma
+        dW = jax.random.normal(step_key, z.shape) * jnp.sqrt(dt)
+        new_z = z + drift * dt + sigma * dW
+
+        # 4. Death: dS = -gamma(z) dt
+        gamma_vals = jax.vmap(model.death_rate)(z)
+        new_S = S - gamma_vals * dt
+
+        return (new_z, new_S), None
+
+    step_indices = jnp.arange(n_steps)
+    (final_z, final_S), _ = jax.lax.scan(
+        scan_body, (z_init, S0), (step_keys, step_indices)
+    )
+
+    alpha = _normalize_log_weights(final_S)
+    return final_z, final_S, alpha

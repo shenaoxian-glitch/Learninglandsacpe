@@ -96,3 +96,38 @@ def total_loss(model, x_sim, alpha, x_obs, z_for_reg, final_S, log_m_obs,
     l_mass = mass_matching_loss(final_S, log_m_obs)
     l_sparse = sparsity_reg_loss(model, z_for_reg, signal)
     return l_mmd + lam_mass * l_mass + lam_sparse * l_sparse, (l_mmd, l_mass, l_sparse)
+
+
+# ======================================================================
+# Open system losses
+# ======================================================================
+
+def death_sparsity_loss(model, z):
+    """
+    L1 sparsity on death rate evaluated on a fixed grid.
+
+    Evaluates gamma on a coarse grid covering the full domain, not just
+    at particle locations. This ensures the penalty reaches the y<2.5
+    region even when no particles are there, preventing the optimizer
+    from spreading a thin uniform death rate everywhere.
+    """
+    # Coarse grid: 20x20 = 400 points spanning the landscape
+    xs = jnp.linspace(-4, 4, 20)
+    ys = jnp.linspace(-2, 4, 20)
+    Xg, Yg = jnp.meshgrid(xs, ys)
+    grid_pts = jnp.column_stack([Xg.ravel(), Yg.ravel()])  # (400, 2)
+    gamma_vals = jax.vmap(model.death_rate)(grid_pts)
+    return jnp.mean(gamma_vals)
+
+
+def open_system_mass_loss(final_S, target_mass):
+    """
+    Mass matching for open system: match total active mass.
+
+    L = (M_sim - M_target)^2 / M_target^2
+
+    M_sim = sum(exp(S_i)), M_target from ground truth.
+    Normalized by M_target^2 to make the loss scale-invariant.
+    """
+    M_sim = jnp.sum(jnp.exp(final_S))
+    return (M_sim - target_mass) ** 2 / (target_mass ** 2 + 1e-8)

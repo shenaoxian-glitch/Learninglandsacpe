@@ -4,6 +4,7 @@ import equinox as eqx
 from .potential import PotentialNN
 from .tilt import TiltLinear
 from .proliferation import ProliferationNN
+from .death_rate import DeathRateNN, DeathRateParametric
 from .noise import NoiseScalar, NoiseNN
 
 
@@ -13,6 +14,12 @@ class WaddingtonModel(eqx.Module):
     tilt: TiltLinear       # None when no external signal
     proliferation: ProliferationNN
     noise: eqx.Module      # NoiseScalar or NoiseNN
+
+
+class SourceDeathModel(eqx.Module):
+    """Model with potential + death rate. Sigma is fixed externally, not learned."""
+    potential: PotentialNN
+    death_rate: eqx.Module  # DeathRateNN or DeathRateParametric
 
 
 def create_model(
@@ -41,3 +48,21 @@ def create_model(
         potential=potential, tilt=tilt,
         proliferation=proliferation, noise=noise,
     )
+
+
+def create_sd_model(key, d_latent=2, c_conf=0.01, parametric_death=False,
+                    y_c_init=0.0, k_init=1.0):
+    """Factory function to create a SourceDeathModel (Phi + gamma only).
+
+    Args:
+        parametric_death: if True, use DeathRateParametric(y_c, k) instead of NN
+        y_c_init: initial threshold for parametric death
+        k_init: initial steepness for parametric death
+    """
+    k1, k2 = jax.random.split(key)
+    potential = PotentialNN(k1, d_latent=d_latent, c_conf=c_conf)
+    if parametric_death:
+        death_rate = DeathRateParametric(y_c_init=y_c_init, k_init=k_init)
+    else:
+        death_rate = DeathRateNN(k2, d_latent=d_latent)
+    return SourceDeathModel(potential=potential, death_rate=death_rate)

@@ -72,6 +72,29 @@ def plot_nn_proliferation(model, xlim=(-5, 5), ylim=(-2, 4), n_grid=200,
 
 
 # ------------------------------------------------------------------
+# Death rate field
+# ------------------------------------------------------------------
+
+def plot_nn_death_rate(model, xlim=(-5, 5), ylim=(-2, 4), n_grid=200,
+                       ax=None, title=r"Learned $\gamma(z)$", vmin=None, vmax=None):
+    """Contour plot of the learned death rate (non-negative)."""
+    X, Y, Z = _eval_grid(lambda z: model.death_rate(z), xlim, ylim, n_grid)
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(7, 5))
+    if vmin is None:
+        vmin = Z.min()
+    if vmax is None:
+        vmax = Z.max()
+    levels = np.linspace(vmin, vmax, 31)
+    cf = ax.contourf(X, Y, Z, levels=levels, cmap='YlOrRd', extend='both')
+    plt.colorbar(cf, ax=ax, label=r'$\gamma(z)$')
+    ax.set_xlabel('x'); ax.set_ylabel('y')
+    ax.set_title(title)
+    return ax
+
+
+# ------------------------------------------------------------------
 # Particles
 # ------------------------------------------------------------------
 
@@ -103,7 +126,10 @@ def plot_weighted_particles(positions, alpha, model=None,
 
 def plot_training_history(history, title="Training Loss"):
     """Plot total loss and components over epochs."""
-    fig, axes = plt.subplots(1, 3, figsize=(14, 4))
+    has_regs = ('mass' in history or 'sparse' in history
+                or 'cons' in history or 'reg' in history)
+    n_panels = 3 if has_regs else 2
+    fig, axes = plt.subplots(1, n_panels, figsize=(5 * n_panels, 4))
 
     axes[0].plot(history['loss'], label='Total')
     axes[0].set_yscale('log'); axes[0].set_title('Total Loss')
@@ -113,26 +139,25 @@ def plot_training_history(history, title="Training Loss"):
     axes[1].set_yscale('log'); axes[1].set_title('MMD Loss')
     axes[1].set_xlabel('Epoch'); axes[1].legend()
 
-    # Plot mass matching and sparsity regularization
-    ax2 = axes[2]
-    has_mass = 'mass' in history
-    has_sparse = 'sparse' in history
-    # Backward compatible: also check old keys
-    has_cons = 'cons' in history
-    has_reg = 'reg' in history
+    if has_regs:
+        ax2 = axes[2]
+        has_mass = 'mass' in history
+        has_sparse = 'sparse' in history
+        has_cons = 'cons' in history
+        has_reg = 'reg' in history
 
-    if has_mass:
-        ax2.plot(history['mass'], label='Mass Matching', color='tab:orange')
-    elif has_cons:
-        ax2.plot(history['cons'], label='Conservation', color='tab:orange')
+        if has_mass:
+            ax2.plot(history['mass'], label='Mass Matching', color='tab:orange')
+        elif has_cons:
+            ax2.plot(history['cons'], label='Conservation', color='tab:orange')
 
-    if has_sparse:
-        ax2.plot(history['sparse'], label='L1 Sparsity', color='tab:green')
-    elif has_reg:
-        ax2.plot(history['reg'], label='Grad Reg', color='tab:green')
+        if has_sparse:
+            ax2.plot(history['sparse'], label='L1 Sparsity', color='tab:green')
+        elif has_reg:
+            ax2.plot(history['reg'], label='Grad Reg', color='tab:green')
 
-    ax2.set_yscale('log'); ax2.set_title('Regularisers')
-    ax2.set_xlabel('Epoch'); ax2.legend()
+        ax2.set_yscale('log'); ax2.set_title('Regularisers')
+        ax2.set_xlabel('Epoch'); ax2.legend()
 
     fig.suptitle(title)
     plt.tight_layout()
@@ -145,26 +170,26 @@ def plot_training_history(history, title="Training Loss"):
 
 def plot_comparison(target_pos, target_alpha, sim_pos, sim_alpha,
                     model=None, target_potential_fn=None,
-                    xlim=(-5, 5), ylim=(-2, 4)):
+                    xlim=(-5, 5), ylim=(-2, 4),
+                    weight_label=r'$\alpha$'):
     """
     Side-by-side scatter: target data vs learned simulation with shared colorscale.
 
     Args:
         target_pos: (N, 2) target positions
-        target_alpha: (N,) target weights
+        target_alpha: (N,) target weights (or raw w)
         sim_pos: (N, 2) simulated positions
-        sim_alpha: (N,) simulated weights
-        model: WaddingtonModel (used for learned potential background on right panel)
+        sim_alpha: (N,) simulated weights (or raw w)
+        model: model with .potential (for learned potential background)
         target_potential_fn: callable z->(scalar) for ground-truth potential
-            background on left panel. If None and model is provided, uses
-            model.potential for both panels (old behavior).
         xlim, ylim: plot limits
+        weight_label: colorbar label (e.g. r'$w$' or r'$\alpha$')
     """
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
     # Compute shared color limits across both datasets
-    all_alpha = np.concatenate([np.asarray(target_alpha), np.asarray(sim_alpha)])
-    vmin, vmax = float(all_alpha.min()), float(all_alpha.max())
+    all_w = np.concatenate([np.asarray(target_alpha), np.asarray(sim_alpha)])
+    vmin, vmax = float(all_w.min()), float(all_w.max())
 
     # Compute potential grids for both panels first, to establish shared colorscale
     Z_target, Z_learned = None, None
@@ -197,7 +222,7 @@ def plot_comparison(target_pos, target_alpha, sim_pos, sim_alpha,
         c=np.asarray(target_alpha), cmap='hot_r', s=15, alpha=0.8, edgecolors='none',
         vmin=vmin, vmax=vmax,
     )
-    plt.colorbar(sc, ax=ax, label=r'$\alpha$')
+    plt.colorbar(sc, ax=ax, label=weight_label)
     ax.set_xlabel('x'); ax.set_ylabel('y')
     ax.set_title("Target (Ground Truth)")
     ax.set_xlim(xlim); ax.set_ylim(ylim)
@@ -212,7 +237,7 @@ def plot_comparison(target_pos, target_alpha, sim_pos, sim_alpha,
         c=np.asarray(sim_alpha), cmap='hot_r', s=15, alpha=0.8, edgecolors='none',
         vmin=vmin, vmax=vmax,
     )
-    plt.colorbar(sc, ax=ax, label=r'$\alpha$')
+    plt.colorbar(sc, ax=ax, label=weight_label)
     ax.set_xlabel('x'); ax.set_ylabel('y')
     ax.set_title("Learned Model")
     ax.set_xlim(xlim); ax.set_ylim(ylim)

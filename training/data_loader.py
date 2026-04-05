@@ -30,6 +30,11 @@ def analytical_proliferation(x, y, prolif_params):
             - prolif_params['delta'])
 
 
+def analytical_death_rate(x, y, death_params):
+    """gamma*(x,y) = softplus(y - y_threshold). Non-negative, smooth."""
+    return jax.nn.softplus(y - death_params['y_threshold'])
+
+
 # ---------------------------------------------------------------------------
 # Multi-timepoint target data generator
 # Howe & Mani format: D = {(t0, X0, t1, X1, s(t))}
@@ -219,3 +224,136 @@ def generate_target_data(
     )
     _, pos, alpha = snapshots[-1]
     return pos, alpha
+
+
+# ---------------------------------------------------------------------------
+# Open system data generation (particle queue with wake-up schedule)
+# ---------------------------------------------------------------------------
+
+def build_particle_queue(sources, n_particles, t_final, dt, key, d=2):
+    """
+    Pre-allocate particles with individual (t0, x0) birth events.
+
+    Each particle has a unique birth time uniformly spread over [0, t_final]
+    and a birth position sampled from N(mu, sigma_src^2 I).
+
+    Args:
+        sources: list of dicts, each with 'mu' (d,), 'sigma_src', 'n_particles'
+            n_particles: how many particles from this source
+        n_particles: total particle count (ignored if sources specify per-source counts)
+        t_final: simulation duration
+        dt: step size
+        key: PRNG key
+        d: spatial dimension
+
+    Returns:
+        z_init: (N_total, d) birth positions
+        wake_schedule: (N_total,) int array, birth step for each particle
+    """
+    all_positions = []
+    all_wake_steps = []
+    n_steps = int(round(t_final / dt))
+
+    for src in sources:
+        mu = jnp.array(src['mu'])
+        sigma_src = src['sigma_src']
+        n = src.get('n_particles', n_particles)
+
+        # Uniform birth times over [0, t_final)
+        birth_times = jnp.linspace(0, t_final, n, endpoint=False)
+        wake_steps = (birth_times / dt).astype(int)
+        wake_steps = jnp.clip(wake_steps, 0, n_steps - 1)
+
+        key, k = jax.random.split(key)
+        noise = sigma_src * jax.random.normal(k, (n, d))
+        positions = mu[None, :] + noise
+
+        all_positions.append(positions)
+        all_wake_steps.append(wake_steps)
+
+    z_init = jnp.concatenate(all_positions, axis=0)
+    wake_schedule = jnp.concatenate(all_wake_steps, axis=0)
+    return z_init, wake_schedule
+
+
+def generate_open_system_data(
+    params,
+    death_params,
+    sources,
+    n_particles,
+    t_final,
+    dt,
+    key,
+):
+    """
+    Generate ground-truth steady-state snapshot for an open system.
+
+    Starts with 0 active particles. Each particle has a unique birth
+    time and position. Particles flow under analytical potential, die
+    via analytical death rate. Returns the final-time snapshot.
+
+    Args:
+        params: potential parameters dict (includes 'sigma')
+        death_params: {'y_threshold': float}
+        sources: list of source dicts with 'mu', 'sigma_src', 'n_particles'
+        n_particles: total particles (used if source doesn't specify)
+        t_final: total simulation time
+        dt: integration step size
+        key: PRNG key
+
+    Returns:
+        target_pos: (N_total, 2) raw final positions of all particles
+        target_S: (N_total,) raw log-weights of all particles
+        target_mass: float, total active mass sum(exp(S))
+        z_init: (N_total, 2) all birth positions
+        wake_schedule: (N_total,) birth step for each particle
+    """
+    n_steps = int(round(t_final / dt))
+    key, queue_key, sim_key = jax.random.split(key, 3)
+
+    z_init, wake_schedule = build_particle_queue(
+        sources, n_particles, t_final, dt, queue_key
+    )
+    N_total = z_init.shape[0]
+
+    # All start dormant
+    S0 = jnp.full(N_total, -100.0)
+    step_keys = jax.random.split(sim_key, n_steps)
+    sigma = params['sigma']
+
+    def scan_body(carry, inputs):
+        px, py, S = carry
+        step_key, step_idx = inputs
+
+        # Wake-up
+        is_waking = (wake_schedule == step_idx)
+        S = jnp.where(is_waking, 0.0, S)
+        px = jnp.where(is_waking, z_init[:, 0], px)
+        py = jnp.where(is_waking, z_init[:, 1], py)
+
+        # Drift
+        gx, gy = _analytical_force(px, py, params)
+        fx, fy = -gx, -gy
+
+        kx, ky = jax.random.split(step_key)
+        nx = jax.random.normal(kx, px.shape) * jnp.sqrt(dt)
+        ny = jax.random.normal(ky, py.shape) * jnp.sqrt(dt)
+
+        new_px = px + fx * dt + sigma * nx
+        new_py = py + fy * dt + sigma * ny
+
+        # Death
+        gamma = analytical_death_rate(px, py, death_params)
+        new_S = S - gamma * dt
+
+        return (new_px, new_py, new_S), None
+
+    step_indices = jnp.arange(n_steps)
+    (final_px, final_py, final_S), _ = jax.lax.scan(
+        scan_body, (z_init[:, 0], z_init[:, 1], S0), (step_keys, step_indices)
+    )
+
+    final_pos = jnp.column_stack([final_px, final_py])
+    active_mass = float(jnp.sum(jnp.exp(final_S)))
+
+    return final_pos, final_S, active_mass, z_init, wake_schedule
