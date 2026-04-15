@@ -181,70 +181,83 @@ Countermeasures:
 
 ### Code structure
 
+Organized by model type. Each subfolder is self-contained with all needed `.py` files.
+
 ```
-LearningLandscape/
+toymodel/
 ├── README.md
-├── train.py                        # [DONE] Main entry point: multi-timepoint training
-├── train_sd.py                     # [DONE] Open-system source+death training script
-├── train_sd_parametric.py          # [DONE] Parametric inference diagnostic (no NN)
-├── train_sd_parametric_multi.py    # [DONE] Multi-timepoint transient matching (breaks coupling)
-├── toymodel_proliferation.py       # [DONE] Augmented SDE with log-weight (analytic)
-├── toymodel_jax.ipynb              # [DONE] Basic SDE landscape + MMD inference
-├── models/
-│   ├── __init__.py                 # [DONE] WaddingtonModel + SourceDeathModel + factories
-│   ├── potential.py                # [DONE] Φ_nn: MLP (2→16→32→32→16→1) + softplus + confinement
-│   ├── tilt.py                     # [DONE] Ψ: Linear(d_signal → d_latent)
-│   ├── proliferation.py            # [DONE] R_θ: MLP (2→16→16→1), unconstrained output
-│   ├── death_rate.py               # [DONE] DeathRateNN (MLP) + DeathRateParametric (2-param)
-│   ├── noise.py                    # [DONE] σ: log-space scalar or state-dependent MLP
-│   └── autoencoder.py              # [PLANNED] Deterministic encoder-decoder
-├── simulator/
-│   ├── __init__.py                 # [DONE]
-│   ├── sde_solver.py               # [DONE] Euler-Maruyama + transition sim + open-system sim
-│   ├── weighted_mmd.py             # [DONE] Weighted MMD + L_mass + L1 sparsity + death losses
-│   └── resampling.py               # [PLANNED] Systematic resampling for weight degeneracy
-├── training/
-│   ├── __init__.py                 # [DONE]
-│   ├── trainer.py                  # [DONE] Multi-timepoint + open-system training + checkpointing
-│   └── data_loader.py              # [DONE] Multi-timepoint + single-timepoint + open-system generators
-├── analysis/
-│   ├── __init__.py                 # [DONE]
-│   ├── bifurcation.py              # [DONE] Equilibrium finding + Hessian classification
-│   ├── visualization.py            # [DONE] Landscape, particles, death rate, training curves, comparison
-│   └── ess_monitor.py              # [PLANNED] Effective sample size tracking
-├── experiments/
-│   ├── synthetic/                   # [PLANNED] Ground-truth benchmark experiments
-│   └── mesc/                        # [PLANNED] Mouse ESC in vitro application
-└── notebooks/                       # [PLANNED] Analysis notebooks
+├── CLAUDE.md
+├── requirements.txt
+│
+├── 01_potential_only/                 # Early standalone prototypes (no shared modules)
+│   ├── toymodel.py                    #   PyTorch parametric potential + SDE
+│   ├── toymodel_jax.py                #   JAX parametric potential + MMD inference
+│   ├── toymodel_proliferation.py      #   JAX augmented SDE with log-weights
+│   ├── toymodel.ipynb                 #   Notebook: PyTorch prototype
+│   └── toymodel_jax.ipynb             #   Notebook: JAX prototype
+│
+├── 02_proliferation_nn/               # Closed-system NN: Φ + R (no death/source)
+│   ├── train.py                       #   Multi-timepoint training (WaddingtonModel)
+│   ├── models/                        #   PotentialNN, ProliferationNN, NoiseScalar, TiltLinear
+│   ├── training/                      #   trainer.py, data_loader.py
+│   ├── simulator/                     #   sde_solver.py, weighted_mmd.py
+│   ├── analysis/                      #   visualization.py, bifurcation.py
+│   └── *.png, *.eqx                   #   Results and trained model
+│
+├── 03_source_death_parametric/        # Open-system, 6 scalar params (no NN)
+│   ├── train_sd_parametric.py         #   Single-snapshot parametric inference
+│   ├── train_sd_parametric_multi.py   #   Multi-timepoint (breaks a/b/c coupling)
+│   ├── training/data_loader.py        #   Particle queue, analytical death rate
+│   └── *.png                          #   Results (potential, death rate, snapshots)
+│
+├── 04_source_death_semi_nn/           # NN Φ + parametric death rate γ(y_c, k)
+│   ├── train_sd.py                    #   Single-snapshot training (SourceDeathModel)
+│   ├── models/                        #   PotentialNN + DeathRateParametric
+│   ├── training/, simulator/, analysis/
+│   └── *.png, *.eqx                   #   Results and trained model
+│
+└── 05_source_death_nn/                # NN Φ + NN γ(y), multi-timepoint (latest)
+    ├── train_sd_nn_multi.py           #   6-snapshot training, reduced architectures
+    ├── models/                        #   PotentialNN(16,16) + DeathRateNN(y_only, 8,8)
+    ├── training/, simulator/, analysis/
+    └── *.png, *.eqx                   #   Results and trained model
 ```
+
+**Shared modules** (copied into each subfolder that needs them):
+
+| Module | Purpose |
+|--------|---------|
+| `models/potential.py` | Φ_nn: configurable `hidden_sizes` + softplus + confinement |
+| `models/death_rate.py` | DeathRateNN (`y_only` mode, configurable `hidden_sizes`) + DeathRateParametric |
+| `models/__init__.py` | WaddingtonModel, SourceDeathModel, `create_sd_model()` factory |
+| `training/trainer.py` | Training loops: `train()`, `train_sd()` with best-model checkpointing |
+| `training/data_loader.py` | Data generation, particle queues, analytical ground truth |
+| `simulator/sde_solver.py` | Euler-Maruyama, open-system sim, `simulate_open_system_full()` |
+| `simulator/weighted_mmd.py` | Weighted MMD, mass loss, sparsity loss, death losses |
+| `analysis/visualization.py` | Landscape, death rate, particles, training curves |
 
 ### Current codebase status
 
 | Module | Status | Description |
 |--------|--------|-------------|
-| Parametric potential + SDE + MMD | ✅ Done | `toymodel_jax.ipynb` |
-| Augmented SDE with log-weights + weighted MMD | ✅ Done | `toymodel_proliferation.py` |
-| Neural network potential (Equinox) | ✅ Done | `models/potential.py` — MLP (2→16→32→32→16→1) + softplus + confinement |
-| Learnable R_θ | ✅ Done | `models/proliferation.py` — MLP (2→16→16→1), unconstrained output |
+| Parametric potential + SDE + MMD | ✅ Done | `01_potential_only/toymodel_jax.py` |
+| Augmented SDE with log-weights | ✅ Done | `01_potential_only/toymodel_proliferation.py` |
+| Neural network potential (Equinox) | ✅ Done | `models/potential.py` — configurable MLP + softplus + confinement |
+| Learnable R_θ | ✅ Done | `models/proliferation.py` — MLP (2→16→16→1), tanh-bounded output |
 | Learnable noise σ | ✅ Done | `models/noise.py` — log-space scalar or state-dependent MLP |
-| Tilt Ψ(s) module | ✅ Done | `models/tilt.py` — Linear(d_signal → d_latent), not yet tested with signal data |
-| Multi-timepoint training | ✅ Done | `training/trainer.py` — short-time transition matching over consecutive pairs |
-| L1 sparsity on R + mass matching loss + logsumexp | ✅ Done | `simulator/weighted_mmd.py`, `simulator/sde_solver.py` |
-| Target data resampling by weights | ✅ Done | `training/data_loader.py` — multinomial resampling at snapshots |
-| Bifurcation analysis | ✅ Done | `analysis/bifurcation.py` — equilibrium finding + Hessian classification |
-| Open-system source+death model | ✅ Done | `train_sd.py`, `models/death_rate.py` — parametric death rate recovered |
-| Parametric inference diagnostic | ✅ Done | `train_sd_parametric.py` — no NN, 6 scalar params, identifies coupling degeneracy |
-| Multi-timepoint transient matching | ✅ Done | `train_sd_parametric_multi.py` — 6 snapshots break a/b/c coupling, 7-37x error reduction |
-| Regional mass matching | ⚠️ Ineffective | λ sweep (0.01–0.5): data sparsity in y>2 prevents y_c/k degeneracy breaking |
-| Best-model checkpointing | ✅ Done | `training/trainer.py` — saves/restores best model against stochastic spikes |
-| Gradient clipping | ✅ Done | `optax.clip_by_global_norm(1.0)` — prevents catastrophic parameter jumps |
-| NN multi-timepoint (reduced arch) | ✅ Done | `train_sd_nn_multi.py` — Φ: 2→16→16→1, γ(y): 1→8→8→1, symmetric potential recovered |
-| NN death rate (DeathRateNN) | ✅ Done | `models/death_rate.py` — y-only input eliminates x-direction degeneracy |
-| Signal-dependent training | 🔲 Planned | Tilt module exists but training loop not yet signal-aware |
+| Tilt Ψ(s) module | ✅ Done | `models/tilt.py` — Linear(d_signal → d_latent) |
+| Multi-timepoint training | ✅ Done | `training/trainer.py` — short-time transition matching |
+| Loss functions | ✅ Done | `simulator/weighted_mmd.py` — weighted MMD + mass + sparsity + death |
+| Bifurcation analysis | ✅ Done | `analysis/bifurcation.py` — equilibrium finding + Hessian |
+| Parametric source+death | ✅ Done | `03_*/train_sd_parametric*.py` — identifies coupling degeneracy, multi-timepoint breaks it |
+| Semi-NN source+death | ✅ Done | `04_*/train_sd.py` — NN Φ + parametric γ |
+| Full NN source+death | ✅ Done | `05_*/train_sd_nn_multi.py` — reduced Φ(16,16) + y-only γ(8,8), symmetric potential recovered |
+| Regional mass matching | ⚠️ Ineffective | data sparsity in y>2 prevents y_c/k degeneracy breaking |
+| Spectral normalization | 🔲 Planned | Lipschitz constraint on NN weights |
+| Weight decay tuning | 🔲 Planned | Stronger L2 to bias toward smooth mappings |
+| Data symmetry augmentation | 🔲 Planned | x ↔ -x reflection for symmetric systems |
 | Autoencoder (encoder-decoder) | 🔲 Planned | Deterministic AE for high-dimensional gene expression |
-| Spectral normalization on Φ_nn | 🔲 Planned | Currently using plain Xavier init without spectral norm |
-| tanh-bounded R_θ output | 🔲 Planned | Currently unconstrained; needs clamping to [β_min, β_max] |
-| ESS monitoring | 🔲 Planned | Not yet implemented |
+| ESS monitoring | 🔲 Planned | Effective sample size tracking |
 
 ---
 
