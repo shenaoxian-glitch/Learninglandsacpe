@@ -241,3 +241,42 @@ def simulate_open_system(model, z_init, wake_schedule, sigma, n_steps, dt, key):
 
     alpha = _normalize_log_weights(final_S)
     return final_z, final_S, alpha
+
+
+def simulate_open_system_full(model, z_init, wake_schedule, sigma, n_steps, dt, key):
+    """
+    Same as simulate_open_system but returns state at every step.
+
+    Returns:
+        all_z: (n_steps, N_total, d) positions at each step
+        all_S: (n_steps, N_total) log-weights at each step
+    """
+    N_total = z_init.shape[0]
+    S0 = jnp.full(N_total, -100.0)
+    step_keys = jax.random.split(key, n_steps)
+
+    def scan_body(carry, inputs):
+        z, S = carry
+        step_key, step_idx = inputs
+
+        is_waking = (wake_schedule == step_idx)
+        S = jnp.where(is_waking, 0.0, S)
+        z = jnp.where(is_waking[:, None], z_init, z)
+
+        grad_phi = jax.vmap(jax.grad(lambda zi: model.potential(zi)))(z)
+        drift = -grad_phi
+
+        dW = jax.random.normal(step_key, z.shape) * jnp.sqrt(dt)
+        new_z = z + drift * dt + sigma * dW
+
+        gamma_vals = jax.vmap(model.death_rate)(z)
+        new_S = S - gamma_vals * dt
+
+        return (new_z, new_S), (new_z, new_S)
+
+    step_indices = jnp.arange(n_steps)
+    _, (all_z, all_S) = jax.lax.scan(
+        scan_body, (z_init, S0), (step_keys, step_indices)
+    )
+
+    return all_z, all_S

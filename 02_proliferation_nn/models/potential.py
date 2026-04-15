@@ -18,21 +18,23 @@ class PotentialNN(eqx.Module):
 
     Phi(z) = Phi_nn(z) + c_conf * ||z||^4
 
-    Architecture: d_latent -> 16 -> 32 -> 32 -> 16 -> 1
+    Architecture: d_latent -> hidden_sizes -> 1
     Activation: softplus (smooth, consistent with Howe & Mani)
     Initialization: Xavier uniform
+
+    Default hidden_sizes=(16, 32, 32, 16) for backward compatibility.
+    For low-dimensional toy systems, (16, 16) suffices and acts as
+    implicit regularization against high-frequency artifacts.
     """
     layers: list
     c_conf: float = eqx.field(static=True)
 
-    def __init__(self, key, d_latent=2, c_conf=0.01):
-        keys = jax.random.split(key, 5)
+    def __init__(self, key, d_latent=2, c_conf=0.01, hidden_sizes=(16, 32, 32, 16)):
+        sizes = [d_latent] + list(hidden_sizes) + [1]
+        keys = jax.random.split(key, len(sizes) - 1)
         self.layers = [
-            xavier_linear(d_latent, 16, keys[0]),
-            xavier_linear(16, 32, keys[1]),
-            xavier_linear(32, 32, keys[2]),
-            xavier_linear(32, 16, keys[3]),
-            xavier_linear(16, 1, keys[4]),
+            xavier_linear(sizes[i], sizes[i + 1], keys[i])
+            for i in range(len(sizes) - 1)
         ]
         self.c_conf = c_conf
 

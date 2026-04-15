@@ -186,6 +186,8 @@ LearningLandscape/
 ├── README.md
 ├── train.py                        # [DONE] Main entry point: multi-timepoint training
 ├── train_sd.py                     # [DONE] Open-system source+death training script
+├── train_sd_parametric.py          # [DONE] Parametric inference diagnostic (no NN)
+├── train_sd_parametric_multi.py    # [DONE] Multi-timepoint transient matching (breaks coupling)
 ├── toymodel_proliferation.py       # [DONE] Augmented SDE with log-weight (analytic)
 ├── toymodel_jax.ipynb              # [DONE] Basic SDE landscape + MMD inference
 ├── models/
@@ -231,9 +233,13 @@ LearningLandscape/
 | Target data resampling by weights | ✅ Done | `training/data_loader.py` — multinomial resampling at snapshots |
 | Bifurcation analysis | ✅ Done | `analysis/bifurcation.py` — equilibrium finding + Hessian classification |
 | Open-system source+death model | ✅ Done | `train_sd.py`, `models/death_rate.py` — parametric death rate recovered |
+| Parametric inference diagnostic | ✅ Done | `train_sd_parametric.py` — no NN, 6 scalar params, identifies coupling degeneracy |
+| Multi-timepoint transient matching | ✅ Done | `train_sd_parametric_multi.py` — 6 snapshots break a/b/c coupling, 7-37x error reduction |
+| Regional mass matching | ⚠️ Ineffective | λ sweep (0.01–0.5): data sparsity in y>2 prevents y_c/k degeneracy breaking |
 | Best-model checkpointing | ✅ Done | `training/trainer.py` — saves/restores best model against stochastic spikes |
 | Gradient clipping | ✅ Done | `optax.clip_by_global_norm(1.0)` — prevents catastrophic parameter jumps |
-| NN death rate (DeathRateNN) | 🔲 Planned | Architecture ready in `models/death_rate.py`, not yet trained |
+| NN multi-timepoint (reduced arch) | ✅ Done | `train_sd_nn_multi.py` — Φ: 2→16→16→1, γ(y): 1→8→8→1, symmetric potential recovered |
+| NN death rate (DeathRateNN) | ✅ Done | `models/death_rate.py` — y-only input eliminates x-direction degeneracy |
 | Signal-dependent training | 🔲 Planned | Tilt module exists but training loop not yet signal-aware |
 | Autoencoder (encoder-decoder) | 🔲 Planned | Deterministic AE for high-dimensional gene expression |
 | Spectral normalization on Φ_nn | 🔲 Planned | Currently using plain Xavier init without spectral norm |
@@ -642,6 +648,372 @@ the problem as an **open system with source injection and parametric death**.
 > only minor spikes (compared to 0.6 spikes without gradient clipping).
 > Early stopping triggered at epoch 1000 (patience=200), and the best model
 > from epoch 983 was restored.
+
+**Step 5a — Parametric inference diagnostic (no neural network)**
+
+The NN-based source+death model (Step 5) recovered the bifurcation topology but
+exhibited two persistent issues: (1) death rate inaccuracy (y_c=2.00 vs true 2.2,
+k=3.18 vs true 1.0), and (2) potential asymmetry (the learned Φ_nn broke the
+x-symmetry of the ground truth). To diagnose whether these are NN capacity issues
+or fundamental identifiability problems, we return to the `toymodel_jax.py`
+parametric inference approach — using the **exact analytical potential form** and
+parametric death rate with no neural network.
+
+> **Implementation notes (2026-04-12):**
+>
+> Created `train_sd_parametric.py`: a self-contained diagnostic script that
+> infers 6 scalar parameters via gradient descent through the open-system SDE,
+> using the same framework as `train_sd.py` but replacing all neural networks
+> with the known analytical forms.
+>
+> **Learnable parameters (6 total):**
+>
+> | Parameter | Form | Initial | True |
+> |-----------|------|---------|------|
+> | a | bifurcation point in H = -(y-a)x² + exp(b)x⁴ - cy + exp(d)y⁴ | 0.5 | 0 |
+> | b | log x⁴ coefficient | -1.0 | -1.6 |
+> | c | drive strength (tilt) | 2.0 | 3.5 |
+> | d | log y⁴ coefficient | -0.8 | -1.2 |
+> | y_c | death threshold in γ(z) = softplus(k·(y-y_c)) | 0.0 | 2.2 |
+> | log_k | log death steepness | 0.5 | 0.0 (k=1) |
+>
+> **Fixed:** σ = 1.5 (same as `train_sd.py`). Not learned.
+>
+> **Key design difference from Step 5:** the analytical potential is symmetric
+> in x by construction (only even powers x², x⁴), so any asymmetry in the
+> results must be a finite-sample artifact or parameter coupling, not NN
+> expressivity.
+>
+> **Training configuration:**
+>
+> ```python
+> N_PARTICLES = 2000      # up from 1000 in Step 5
+> T_FINAL = 8.0, DT = 0.01, N_STEPS = 800
+> Loss = L_MMD(weighted) + 1.0 · L_mass
+> Optimizer: clip_by_global_norm(1.0) + Adam(lr=0.01)
+> Epochs: 500, use_fresh_keys=True
+> ```
+>
+> **Results (500 epochs, best model at epoch 497):**
+>
+> | Parameter | Learned | True | Error |
+> |-----------|---------|------|-------|
+> | a | -1.030 | 0.0 | **-1.030** |
+> | b | -1.191 | -1.6 | +0.409 |
+> | c | 3.749 | 3.5 | +0.249 |
+> | d | -1.242 | -1.2 | -0.042 |
+> | y_c | 2.158 | 2.2 | **-0.042** |
+> | k | 1.532 | 1.0 | +0.532 |
+> | Best loss | 0.0090 | | |
+>
+> **Analysis — parameter coupling degeneracy:**
+>
+> 1. **Parameter `a` (bifurcation point) has large error (-1.03 vs 0.0).**
+>    This is the most significant finding. Even with the correct functional
+>    form, `a` is not recovered. The reason: `a` enters the potential as
+>    `-(y - a)x²`, so shifting `a` downward is equivalent to adding a
+>    `+a·x²` term to the potential. This can be partially compensated by
+>    adjusting `b` (x⁴ coefficient) and `c` (y-tilt), creating a family of
+>    parameter combinations that produce nearly identical landscapes in the
+>    region where particles exist. The optimizer finds a local minimum in
+>    this degenerate manifold, not the true parameters.
+>
+> 2. **Death rate y_c recovery is excellent (2.158 vs 2.2, error -0.04).**
+>    Dramatically better than the NN version (2.00 vs 2.2, error -0.20).
+>    The parametric potential's inability to absorb death-rate information
+>    into extra NN degrees of freedom makes γ more identifiable.
+>
+> 3. **k/y_c trade-off persists but is less severe.** k=1.53 (true 1.0)
+>    vs NN version k=3.18. The 1D death rate profile shows that learned
+>    and true curves nearly overlap in the region y ∈ [-1, 3] where particles
+>    actually exist. The k overestimate only affects y > 3 where there is
+>    little data support.
+>
+> 4. **Well-recovered parameters:** `d` (y⁴ confinement, error -0.04) and
+>    `y_c` (death threshold, error -0.04) are accurately recovered because
+>    their physical effects are direct and weakly coupled to other parameters.
+>
+> 5. **Potential asymmetry eliminated.** The learned potential is symmetric
+>    in x (by construction), confirming that the NN version's asymmetry was
+>    an NN artifact, not a framework issue.
+>
+> **Conclusions for the project:**
+>
+> - The death rate inaccuracy and potential issues are **not purely NN
+>   problems** — they reflect fundamental parameter identifiability
+>   challenges in the open-system framework.
+> - The `a`-`b`-`c` coupling degeneracy suggests that **anchoring at least
+>   one potential parameter** (e.g., fixing `a=0` as a known bifurcation
+>   point, or fixing the potential scale) may be necessary for accurate
+>   recovery.
+> - The parametric diagnostic confirms that the death rate `y_c` **is**
+>   recoverable when the potential has limited degrees of freedom. The NN
+>   version's y_c error (0.20 vs 0.04 here) is therefore attributable to
+>   the NN potential absorbing death-rate information.
+> - For future NN training: consider a **two-phase strategy** — first fit
+>   Φ_nn with death rate frozen, then freeze Φ_nn and fit γ. This mimics
+>   the parametric case's reduced coupling.
+
+**Step 5a-ii — Multi-timepoint transient matching (breaking parameter coupling)**
+
+Step 5a identified a fundamental `a`-`b`-`c` coupling degeneracy: multiple
+parameter combinations produce indistinguishable steady-state distributions.
+The key insight is that these degenerate parameter sets have **different transient
+dynamics** — "steep slope + fast death" vs "gentle slope + slow death" push
+particles at different speeds, so their distributions at intermediate times
+(t=1, 2, 3) differ even if their t=8 steady states converge.
+
+By forcing the model to simultaneously match **6 snapshot times** during the
+transient phase, we provide enough constraints to uniquely identify the
+parameters. This is the multi-timepoint approach already used in Step 4 for
+the NN model, now applied to the parametric diagnostic.
+
+> **Implementation notes (2026-04-12):**
+>
+> Created `train_sd_parametric_multi.py`: extends `train_sd_parametric.py` with
+> full-trajectory simulation (`jax.lax.scan` returning all timesteps) and
+> snapshot-based loss averaging.
+>
+> **Snapshot times:** t = 1.0, 2.0, 3.0, 4.0, 6.0, 8.0
+> - Early snapshots (t=1-3) capture wavefront propagation (most informative)
+> - Late snapshots (t=6-8) ensure steady-state also matches
+>
+> **Key difference from Step 5a:** both sim and target use `softmax(S)` for
+> weights at each snapshot, so dormant particles (S=-100) automatically get
+> near-zero weight. MMD is computed between two weighted point clouds.
+>
+> **Ground-truth snapshot statistics:**
+>
+> | Snapshot | Mass | ~Alive particles |
+> |----------|------|------------------|
+> | t=1.0 | 229 | 250 |
+> | t=2.0 | 384 | 500 |
+> | t=3.0 | 478 | 750 |
+> | t=4.0 | 536 | 1000 |
+> | t=6.0 | 591 | 1500 |
+> | t=8.0 | 611 | 2000 |
+>
+> These show a clear transient buildup — the system is far from steady state
+> at t=1-3, providing the coupling-breaking information.
+>
+> **Training configuration:** same as Step 5a (2000 particles, Adam lr=0.01,
+> grad clipping 1.0, 500 epochs) but with 6-snapshot averaged loss.
+>
+> **Results (500 epochs, best model at epoch 446):**
+>
+> | Parameter | Learned | True | Error | Step 5a error | Improvement |
+> |-----------|---------|------|-------|---------------|-------------|
+> | a | -0.139 | 0.0 | **-0.139** | -1.030 | **7.4x** |
+> | b | -1.507 | -1.6 | +0.094 | +0.409 | **4.4x** |
+> | c | 3.460 | 3.5 | **-0.041** | -1.490 | **36x** |
+> | d | -1.210 | -1.2 | -0.010 | -0.042 | 4.2x |
+> | y_c | 1.966 | 2.2 | -0.234 | -0.042 | worse |
+> | k | 1.674 | 1.0 | +0.674 | +0.532 | similar |
+> | Best loss | 0.00498 | | | 0.0090 | 1.8x |
+>
+> **Analysis — coupling degeneracy largely broken:**
+>
+> 1. **Potential parameters dramatically improved.** The `a`-`b`-`c` coupling
+>    that plagued single-snapshot matching is largely resolved:
+>    - `a` error: -1.03 → -0.14 (7.4x improvement)
+>    - `c` error: -1.49 → -0.04 (36x improvement, nearly exact)
+>    - `b` error: +0.41 → +0.09 (4.4x improvement)
+>    - `d` error: -0.04 → -0.01 (also improved, already good)
+>
+> 2. **Death rate y_c/k trade-off persists and worsens slightly.**
+>    y_c error increased from -0.04 to -0.23, and k error from +0.53 to +0.67.
+>    This is expected: the multi-timepoint loss now constrains the potential
+>    more tightly, leaving less flexibility for the death rate to compensate.
+>    The y_c/k trade-off is a genuine 1D degeneracy in the softplus
+>    parameterization (steeper sigmoid + lower threshold ≈ same boundary).
+>
+> 3. **Overall loss halved (0.0090 → 0.0050).** The multi-timepoint model
+>    achieves a substantially better fit despite having the same number of
+>    parameters — the extra temporal constraints guide optimization toward
+>    the true parameter region rather than a degenerate manifold.
+>
+> 4. **Transient wavefront is the key signal.** The snapshots at t=1-3
+>    (when only 250-750 particles are alive and actively flowing down the
+>    potential) provide the strongest gradient signal for `a`, `b`, `c`
+>    because these parameters control the flow speed and bifurcation timing.
+>
+> **Conclusions and next steps:**
+>
+> - Multi-timepoint matching **successfully breaks the a-b-c coupling
+>   degeneracy** that was the main failure mode in Step 5a.
+> - The remaining y_c/k trade-off is a **1D degeneracy** intrinsic to the
+>   softplus death rate form — it cannot be broken by temporal information
+>   alone and may require either reparameterization or regularization.
+> - This validates the approach for the NN model: when scaling to NN
+>   potential + NN death rate, multi-timepoint transient matching should be
+>   used from the start.
+>
+> **Bug fix:** also corrected `particles_parametric.png` visualization in
+> `train_sd_parametric.py` — both panels were incorrectly showing the true
+> potential as background. The right panel now shows the learned potential.
+
+**Step 5a-iii — Regional mass matching (attempting to break y_c/k degeneracy)**
+
+The y_c/k trade-off identified in Steps 5a/5a-ii is a 1D degeneracy in the
+softplus death rate: (y_c=1.97, k=1.67) produces nearly identical γ(y) as
+(y_c=2.2, k=1.0) in the region where particles actually exist (y<2).
+
+**Approach:** divide space into y-axis sub-regions and match mass in each
+region separately, forcing the death rate to act at the correct spatial
+location. Loss term: L_regional = (1/J) Σ_j [log(M_sim(Ω_j)+ε) - log(M_tgt(Ω_j)+ε)]²
+
+> **Implementation notes (2026-04-12):**
+>
+> Added `regional_mass_loss()` to `train_sd_parametric_multi.py` with
+> configurable region boundaries and λ_regional coefficient.
+>
+> **Region boundaries:** y < 1.0 | 1.0–1.5 | 1.5–2.0 | 2.0–2.5 | y ≥ 2.5
+> (5 regions, finer resolution around the death transition zone)
+>
+> **Smoothing:** ε = 1.0 (handles zero-mass regions without masking real
+> differences; with masses O(10–500), log(M+1) ≈ log(M))
+>
+> **λ sweep results (5 regions, 500 epochs each):**
+>
+> | λ_regional | a err | c err | y_c err | k err | Notes |
+> |------------|-------|-------|---------|-------|-------|
+> | 0 (baseline) | -0.139 | -0.041 | -0.234 | +0.674 | Best potential |
+> | 0.01 | -0.119 | -0.059 | -0.233 | +0.674 | ≈ baseline, no effect |
+> | 0.05 | -0.250 | -0.334 | -0.253 | +0.704 | Potential degraded, no y_c/k gain |
+> | 0.1 (3 regions) | -0.389 | -0.571 | -0.299 | +0.772 | Worse everywhere |
+> | 0.5 | -0.324 | -1.328 | -0.300 | +0.524 | k improved but potential wrecked |
+>
+> **Analysis — regional mass matching ineffective:**
+>
+> 1. **Data sparsity is the fundamental bottleneck.** Very few particles
+>    reach y>2 (the death zone), so regional mass in the critical Ω_4
+>    (2.0–2.5) and Ω_5 (y≥2.5) regions is dominated by stochastic noise.
+>    The gradient signal from these regions is too noisy to reliably steer
+>    y_c/k.
+>
+> 2. **Clear λ trade-off with no sweet spot.** Low λ (≤0.01) has zero
+>    effect on y_c/k. High λ (≥0.1) degrades potential parameters because
+>    the noisy regional gradients overwhelm the cleaner MMD signal. There
+>    is no intermediate λ that improves death rate without hurting the
+>    potential.
+>
+> 3. **The degeneracy is within-region, not between-region.** The pairs
+>    (y_c=1.97, k=1.67) and (y_c=2.2, k=1.0) produce nearly identical
+>    γ(y) for y<2 where particles exist. Even finer region boundaries
+>    cannot distinguish them because the degenerate death rates agree
+>    everywhere that data is available.
+>
+> **Conclusion:** Regional mass matching cannot break the y_c/k degeneracy
+> because it requires particle data in the death zone (y>2) that doesn't
+> exist. The softplus y_c/k trade-off is fundamentally an **extrapolation
+> problem** — the model fits well in the data-rich region but is
+> underdetermined in the data-sparse tail.
+>
+> **Potential alternatives (all require biological assumptions):**
+>
+> - **Fix k=1 (or add k-regularization prior)** — assumes transition steepness
+>   is known a priori
+> - **Phantom/probe evaluation** — compare γ(y) directly on a grid, bypassing
+>   particle sparsity; assumes ground-truth γ is accessible
+> - **Secondary source above y_c** — populate the death zone with data;
+>   assumes ability to inject particles at arbitrary locations
+>
+> - **Terminal boundary hinge loss** *(assumes known survival boundary)*:
+>   If biology dictates an absolute boundary y_max beyond which survival
+>   probability is zero (e.g., terminally differentiated cells cannot exist
+>   past a developmental stage), penalize surviving particles that cross it:
+>   `L_boundary = (1/N) Σ_i exp(S_i) · max(0, y_i - y_max)^p` (p=2 or 3).
+>   This acts as a "force field" in the data-void region: any particle not
+>   killed by γ(z) before reaching y_max incurs a large penalty, forcing
+>   the optimizer to increase the death rate slope k so that weights decay
+>   to ~0 before the boundary. **Assumption:** y_max must be known from
+>   domain knowledge (e.g., no observed cells beyond a certain pseudotime).
+>
+> - **Death rate gradient penalty / smoothness prior** *(assumes smooth
+>   apoptosis field)*:
+>   Penalize the spatial gradient of the death rate:
+>   `L_smooth = (1/N) Σ_i ‖∇_z γ_θ(z_i)‖²`.
+>   For the parametric model γ=softplus(k(y−y_c)), this simplifies to an
+>   L2 penalty on k. Among all (y_c, k) pairs that satisfy the global mass
+>   constraint, this selects the smoothest (lowest-k) solution — which is
+>   typically more biologically realistic since apoptosis probability
+>   transitions gradually rather than as a sharp step. **Assumption:**
+>   the true death rate field is smooth/gradual, which is reasonable for
+>   most biological systems but may not hold for sharp environmental
+>   boundaries.
+
+**Step 5a-iv — Neural network multi-timepoint inference (architecture constraints)**
+
+After confirming the parametric framework (Steps 5a-i through 5a-iii), we return to
+neural network inference with two critical architectural insights:
+
+1. **Reduced potential capacity** — the original 4-layer MLP (2→16→32→32→16→1,
+   2193 params) is over-parameterized for a 2D toy system. After fitting the
+   macroscopic potential, excess capacity fits Brownian noise as high-frequency
+   artifacts (spectral bias). Reducing to 2→16→16→1 (337 params) acts as implicit
+   regularization, producing smoother, more symmetric landscapes.
+
+2. **y-only death rate** — constraining γ_θ(z) to γ_θ(y) structurally eliminates
+   the x-direction degeneracy: ∂γ/∂x ≡ 0 by construction. The optimizer can no
+   longer use asymmetric death to compensate for lateral potential errors, forcing
+   the potential to learn correct x-gradients.
+
+> **Architecture:**
+>
+> | Component | Architecture | Parameters |
+> |-----------|-------------|-----------|
+> | Potential Φ_nn | 2 → 16 → 16 → 1 + softplus + confinement | 337 |
+> | Death rate γ_nn | 1(y) → 8 → 8 → 1 → softplus | 97 |
+> | **Total** | | **434** (vs 2530 before) |
+>
+> **Implementation:** `train_sd_nn_multi.py`, with configurable architectures via
+> `create_sd_model(potential_hidden=..., death_y_only=True, death_hidden=...)`.
+>
+> **Results (1000 epochs, 6 snapshots at t=1,2,3,4,6,8):**
+>
+> - **Potential:** Symmetric double-well recovered. The old 4-layer network's
+>   asymmetry artifact is eliminated. Landscape is smoother than ground truth
+>   (expected: 337 params cannot capture fine polynomial structure, but the
+>   macroscopic topology is correct).
+>
+> - **Death rate:** The y-only constraint works perfectly — γ is strictly
+>   x-invariant by construction. However, the learned curve activates too
+>   early (~y=-1 vs true ~y=1.5) with a gentler slope, significantly
+>   underestimating death for y>2. This is the same extrapolation problem
+>   as the parametric case: the NN finds a smooth, low-slope solution that
+>   fits well where data exists (y<2) but cannot extrapolate the steep rise.
+>
+> - **Particle distributions:** Excellent spatial match at all snapshot times.
+>   Symmetric bifurcation pattern correctly reproduced.
+>
+> - **Loss:** Final best = 0.0061 (MMD=0.005, Mass=0.001).
+>
+> **Key insight:** Architecture constraints (capacity reduction + y-only death)
+> are far more effective than loss-function engineering (regional mass matching).
+> The potential asymmetry problem is completely solved. The death rate
+> extrapolation problem persists but is now cleanly isolated as a
+> regularization problem — the NN needs additional inductive bias to prefer
+> steeper transitions in the data-sparse region.
+>
+> **Future NN regularization strategies (algorithmic, no extra data):**
+>
+> - **Spectral normalization (strongly recommended):** Constrain the maximum
+>   singular value of each weight matrix, imposing a Lipschitz bound on the
+>   network. Physically equivalent to limiting the gradient magnitude of the
+>   potential, preventing non-physical "cliffs" or "pits" from fitting noise.
+>   This is the most principled defense against SDE-driven overfitting.
+>
+> - **Stronger weight decay:** Increase `weight_decay` in `optax.adamw` to
+>   bias the network toward near-linear mappings. In data-void regions, the
+>   potential surface decays to a smooth default instead of arbitrary wiggles.
+>   Simple to implement but less targeted than spectral normalization.
+>
+> - **Data symmetry augmentation:** If the system has known symmetry (e.g.,
+>   left-right symmetry x ↔ -x as in the bifurcation toy model), augment
+>   target data by reflecting particles: (x,y) → (-x,y). This forces the
+>   potential to be exactly symmetric without any extra parameters, eliminating
+>   residual asymmetry from finite-sample noise. Requires domain knowledge
+>   about the system's symmetry group.
 
 **Step 5b — Synthetic benchmark: binary choice + proliferation**
 

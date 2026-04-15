@@ -7,22 +7,30 @@ class DeathRateNN(eqx.Module):
     """
     Neural network death rate: gamma_phi(z) >= 0
 
-    Architecture: d_latent -> 16 -> 16 -> 1
+    Architecture: d_input -> hidden_sizes -> 1 -> softplus
     Hidden activation: softplus
     Output: softplus(raw) -- guarantees non-negativity
+
+    When y_only=True, d_input=1 and only z[1] (the y coordinate) is used.
+    This structurally eliminates x-direction degeneracy: the optimizer
+    cannot use asymmetric death to compensate for potential errors,
+    forcing the potential to learn correct lateral gradients.
 
     Used in the Feynman-Kac weight equation: dS = -gamma(z) dt
     Since gamma >= 0, log-weights S are strictly non-increasing,
     and effective mass w = exp(S) in (0, 1].
     """
     layers: list
+    y_only: bool = eqx.field(static=True)
 
-    def __init__(self, key, d_latent=2):
-        keys = jax.random.split(key, 3)
+    def __init__(self, key, d_latent=2, y_only=False, hidden_sizes=(16, 16)):
+        self.y_only = y_only
+        d_input = 1 if y_only else d_latent
+        sizes = [d_input] + list(hidden_sizes) + [1]
+        keys = jax.random.split(key, len(sizes) - 1)
         self.layers = [
-            eqx.nn.Linear(d_latent, 16, key=keys[0]),
-            eqx.nn.Linear(16, 16, key=keys[1]),
-            eqx.nn.Linear(16, 1, key=keys[2]),
+            eqx.nn.Linear(sizes[i], sizes[i + 1], key=keys[i])
+            for i in range(len(sizes) - 1)
         ]
 
     def __call__(self, z):
@@ -30,7 +38,7 @@ class DeathRateNN(eqx.Module):
         z: (d_latent,)
         Returns: scalar death rate gamma >= 0
         """
-        x = z
+        x = z[1:2] if self.y_only else z
         for layer in self.layers[:-1]:
             x = jax.nn.softplus(layer(x))
         raw = jnp.squeeze(self.layers[-1](x))
