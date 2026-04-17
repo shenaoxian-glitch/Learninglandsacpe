@@ -19,6 +19,7 @@ Organized by model type (each subfolder is self-contained with all needed .py fi
 | `01_potential_only/` | Early standalone prototypes (torch/JAX) | `toymodel.py`, `toymodel_jax.py`, `toymodel_proliferation.py` |
 | `02_proliferation_nn/` | Closed-system NN (Φ + R) | `train.py` |
 | `03_source_death_parametric/` | Open-system, 6 scalar params | `train_sd_parametric.py`, `train_sd_parametric_multi.py` |
+| `03.1_asymmetric_potential/` | Asymmetric potential (fixed 2D death) | `train_asym_potential_multi.py`, `sweep_particles.py` |
 | `04_source_death_semi_nn/` | NN Φ + parametric death rate | `train_sd.py` |
 | `05_source_death_nn/` | NN Φ + NN γ(y), multi-timepoint | `train_sd_nn_multi.py` |
 
@@ -37,14 +38,21 @@ Shared modules (copied into each subfolder that needs them):
 ## Ground-truth parameters
 
 ```python
+# Models 03–05 (symmetric potential):
 TARGET_PARAMS = {'a': 0, 'b': -1.6, 'c': 3.5, 'd': -1.2, 'sigma': 1.5}
 # H = -(y-a)x² + exp(b)x⁴ - cy + exp(d)y⁴
 DEATH_PARAMS = {'y_threshold': 2.2}  # γ = softplus(k·(y - y_c)), k=1
+
+# Model 3.1 (asymmetric potential, fixed 2D death):
+TARGET_PARAMS_ASYM = {'a': -1.0, 'b': -1.6, 'c': 3.5, 'd': -1.2, 'e': 0.7, 'sigma': 1.5}
+# H = -(y-a)x² + exp(b)x⁴ - cy + exp(d)y⁴ + e·x
+DEATH_PARAMS_2D = {'A': 2.0, 'w_x': 0.5, 'k1': 1.0, 'y_select': 1.0,
+                   'B': 5.0, 'k2': 3.0, 'y_max': 3.0}
 ```
 
 ## Current progress
 
-Completed through Step 5a-iv (NN multi-timepoint inference).
+Completed through Step 5a-v (asymmetric potential with fixed 2D death rate).
 See README.md "Research Roadmap" for full history and next steps.
 
 Key findings:
@@ -56,6 +64,7 @@ Key findings:
   - Reduced Φ capacity (2→16→16→1, 337 params) eliminates asymmetry artifacts
   - y-only death rate (γ(y) not γ(x,y)) eliminates x-direction degeneracy
   - Death rate extrapolation (slope too shallow in y>2) remains unsolved
+- Asymmetric potential (e·x term) + fixed 2D death rate works; particle sweep confirms a-c degeneracy is structural not sampling-limited
 - Next: spectral normalization, weight decay, data symmetry augmentation
 
 ## Conventions

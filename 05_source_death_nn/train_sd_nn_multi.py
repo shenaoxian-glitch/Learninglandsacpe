@@ -391,18 +391,27 @@ plt.close()
 # --- Figure 2: Learned landscape + death rate vs ground truth ---
 fig, axes = plt.subplots(1, 4, figsize=(24, 5))
 
-# Learned potential
-plot_nn_landscape(model, ax=axes[0], title="Learned Potential (NN)")
-
-# True potential
+# Compute grids for shared color scale
 x_grid = jnp.linspace(-5, 5, 200)
 y_grid = jnp.linspace(-2, 4, 200)
 Xg, Yg = jnp.meshgrid(x_grid, y_grid)
 Z_true = jax.vmap(jax.vmap(
     lambda x, y: analytical_potential(x, y, TARGET_PARAMS)
 ))(Xg, Yg)
+_, _, Z_learned_pot = _eval_grid(model.potential, (-5, 5), (-2, 4), 200)
+
+# Shared potential color scale
+pot_vmin = min(float(jnp.min(Z_true)), float(Z_learned_pot.min()))
+pot_vmax = max(float(jnp.max(Z_true)), float(Z_learned_pot.max()))
+
+# Learned potential
+plot_nn_landscape(model, ax=axes[0], title="Learned Potential (NN)",
+                  vmin=pot_vmin, vmax=pot_vmax)
+
+# True potential
+pot_levels = np.linspace(pot_vmin, pot_vmax, 31)
 cf = axes[1].contourf(np.array(Xg), np.array(Yg), np.array(Z_true),
-                       levels=30, cmap='viridis')
+                       levels=pot_levels, cmap='viridis', extend='both')
 plt.colorbar(cf, ax=axes[1], label=r'$\Phi^*(x,y)$')
 axes[1].set_xlabel('x'); axes[1].set_ylabel('y')
 axes[1].set_title('True Potential')
@@ -472,11 +481,12 @@ for col, (t_vis, step_vis) in enumerate(zip(VIS_TIMES, VIS_STEPS)):
     tgt_z_i = jnp.column_stack([tgt_all_px[step_vis], tgt_all_py[step_vis]])
     tgt_S_i = tgt_all_S[step_vis]
     tgt_w_i = np.array(jnp.clip(jnp.exp(tgt_S_i), 0.0, 1.0))
+    alive = tgt_w_i > 1e-6  # exclude dormant particles (S=-100)
 
     ax_tgt.contourf(np.array(Xg), np.array(Yg), np.array(Z_true),
-                    levels=30, cmap='viridis', alpha=0.3)
-    sc = ax_tgt.scatter(np.array(tgt_z_i[:, 0]), np.array(tgt_z_i[:, 1]),
-                        c=tgt_w_i, cmap='coolwarm', s=6, alpha=0.5,
+                    levels=pot_levels, cmap='viridis', alpha=0.3)
+    sc = ax_tgt.scatter(np.array(tgt_z_i[alive, 0]), np.array(tgt_z_i[alive, 1]),
+                        c=tgt_w_i[alive], cmap='coolwarm', s=6, alpha=0.5,
                         vmin=0, vmax=1, edgecolors='none')
     ax_tgt.set_xlim(-5, 5); ax_tgt.set_ylim(-2, 4)
     ax_tgt.set_title(f'Target t={t_vis:.0f}')
@@ -488,13 +498,12 @@ for col, (t_vis, step_vis) in enumerate(zip(VIS_TIMES, VIS_STEPS)):
     sim_z_i = sim_all_z[step_vis]
     sim_S_i = sim_all_S[step_vis]
     sim_w_i = np.array(jnp.clip(jnp.exp(sim_S_i), 0.0, 1.0))
+    alive = sim_w_i > 1e-6  # exclude dormant particles (S=-100)
 
-    # Get learned potential for background
-    Z_learned = _eval_grid(model.potential, (-5, 5), (-2, 4), 200)[2]
-    ax_sim.contourf(np.array(Xg), np.array(Yg), Z_learned,
-                    levels=30, cmap='viridis', alpha=0.3)
-    sc = ax_sim.scatter(np.array(sim_z_i[:, 0]), np.array(sim_z_i[:, 1]),
-                        c=sim_w_i, cmap='coolwarm', s=6, alpha=0.5,
+    ax_sim.contourf(np.array(Xg), np.array(Yg), Z_learned_pot,
+                    levels=pot_levels, cmap='viridis', alpha=0.3)
+    sc = ax_sim.scatter(np.array(sim_z_i[alive, 0]), np.array(sim_z_i[alive, 1]),
+                        c=sim_w_i[alive], cmap='coolwarm', s=6, alpha=0.5,
                         vmin=0, vmax=1, edgecolors='none')
     ax_sim.set_xlim(-5, 5); ax_sim.set_ylim(-2, 4)
     ax_sim.set_title(f'Learned t={t_vis:.0f}')

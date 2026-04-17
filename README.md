@@ -37,6 +37,129 @@ No existing method jointly achieves all of the following:
 
 ---
 
+## From Real Data to Model Design
+
+Before diving into the mathematical framework, we address three foundational
+questions that arise when bridging single-cell experimental data and
+SDE-based simulation models.
+
+### I. Is MMD well-defined between unweighted cells and weighted particles?
+
+**Conclusion: Yes — it is strictly well-defined.**
+
+The Maximum Mean Discrepancy (MMD) measures the distance between two
+probability measures $P$ and $Q$ in a reproducing kernel Hilbert space (RKHS):
+
+$$\text{MMD}^2(P, Q) = \|\mu_P - \mu_Q\|_{\mathcal{H}}^2$$
+
+where $\mu_P = \mathbb{E}_{X \sim P}[\phi(X)]$ is the kernel mean embedding
+of measure $P$.
+
+In real single-cell RNA-seq data, we cannot observe a continuous measure — we
+observe $M$ discrete cells. In measure-theoretic terms, this forms the
+**empirical measure** $\hat{P}$ of the true measure $P$:
+
+$$\hat{P} = \frac{1}{M} \sum_{i=1}^{M} \delta_{x_i}$$
+
+Each cell carries strictly equal weight $\frac{1}{M}$.
+
+In our SDE simulation, we generate $N$ computational particles (where $N$ can
+differ from $M$). Because particles accumulate log-weights $S_j$ through
+the death rate $\gamma(z)$ during evolution, the normalized empirical measure
+$\hat{Q}$ of the simulation is:
+
+$$\hat{Q} = \sum_{j=1}^{N} \alpha_j \, \delta_{z_j}, \quad \text{where} \quad \alpha_j = \frac{\exp(S_j)}{\sum_{k=1}^{N} \exp(S_k)}$$
+
+Substituting $\hat{P}$ and $\hat{Q}$ into the MMD definition, the double
+integrals reduce to double sums:
+
+$$\text{MMD}^2(\hat{P}, \hat{Q}) = \sum_{i=1}^{N} \sum_{j=1}^{N} \alpha_i \alpha_j \, k(z_i, z_j) - \frac{2}{M} \sum_{i=1}^{N} \sum_{j=1}^{M} \alpha_i \, k(z_i, x_j) + \frac{1}{M^2} \sum_{i=1}^{M} \sum_{j=1}^{M} k(x_i, x_j)$$
+
+**Key insight:** The MMD derivation never requires the two distributions to
+have equal sample sizes, nor matching weight schemes. As long as
+$\sum \alpha_i = 1$ and $\sum \frac{1}{M} = 1$ (i.e., both are probability
+measures), the distance metric is mathematically rigorous and computable.
+Weighted simulation particles are simply a non-uniform discretization of the
+continuous density $\rho(z, t)$.
+
+### II. How are source shape and generation rate determined?
+
+**Conclusion: Source shape must be computed directly from real data (not
+inferred); source generation rate must be fixed as a known condition (not
+inferred).**
+
+#### Why must the generation rate $\lambda(t)$ be fixed a priori?
+
+If $\lambda(t)$ were treated as a learnable function, it would immediately
+introduce a **global mass degeneracy**. The total mass $M(t)$ evolves as:
+
+$$\frac{dM(t)}{dt} = \lambda(t) - \int \gamma(z) \, \rho(z, t) \, dz$$
+
+If real data shows declining total cell counts, the model could equally
+attribute this to "the source stopped producing cells ($\lambda(t) \to 0$)"
+or "the system has extremely high global death rate ($\gamma(z) \gg 0$)."
+This coupling is mathematically unresolvable without additional boundary
+conditions. Therefore, $\lambda(t)$ must be provided as a prior function,
+and the model can only infer $\gamma(z)$.
+
+#### How to determine shape and rate from real data?
+
+**Source shape (multivariate Gaussian):** No guessing required. At $t = 0$
+or the earliest progenitor cell population, use clustering algorithms to
+extract progenitor cells, then directly compute their empirical mean vector
+$\mu$ and covariance matrix $\Sigma$ in latent space. The source distribution
+is set as $\mathcal{N}(\mu, \Sigma)$.
+
+**Source generation rate $\lambda(t)$:**
+
+- If the experiment records **absolute cell counts** at different time points,
+  fit $\lambda(t)$ from the experimental proliferation curve.
+- If the experiment only provides **relative proportions** (no absolute
+  counts), this is mathematically equivalent to a relative rate model. In this
+  case, set $\lambda(t) \equiv 1.0$ (choosing the injection rate as the
+  system's time reference frame). The inferred death rate $\gamma(z)$ then
+  represents the relative apoptosis rate with respect to stem cell injection.
+
+### III. How does the model handle time-varying $\lambda(t)$ with fixed particle count?
+
+This is the most common source of confusion when discretizing the physical
+equations into code.
+
+**Core principle: the number of computational particles ($N_\text{sim}$) and
+the number of biological cells ($N_\text{cells}$) are fully decoupled in
+numerical integration.**
+
+In a SDE solver (e.g., `jax.lax.scan`), tensor shapes must remain fixed — you
+cannot dynamically append particles as $\lambda(t)$ increases. The standard
+numerical solution is a **pre-allocated queue with dynamic initial weights**.
+
+#### Implementation logic
+
+**1. Pre-allocate equal-count computational particles:**
+Regardless of how $\lambda(t)$ varies, uniformly schedule $N_\text{queue}$
+particle wake-up times across $t \in [0, T]$. For example, 1000 particles
+total, one waking every $\Delta t$.
+
+**2. Encode $\lambda(t)$ through initial mass, not particle count:**
+When particle $i$ wakes at time $t_i$, its initial position is sampled from
+$\mathcal{N}(\mu, \Sigma)$. The key step: its initial log-weight is set to:
+
+$$S_i(t_i) = \log\!\bigl(\lambda(t_i) \cdot \Delta t\bigr)$$
+
+**Physical equivalence:** If the biological system's generation rate at $t=1$
+is twice that at $t=0$ (i.e., $\lambda(t{=}1) = 2\lambda(t{=}0)$), the code
+does *not* wake up twice as many particles at $t=1$. It still wakes exactly
+one particle, but assigns it an extra $\log(2)$ of initial log-weight
+(effective mass $w = 2$). When this particle later participates in the
+weighted MMD computation, it contributes twice the probability density — fully
+equivalent to injecting two real cells.
+
+This "weight-encodes-quantity" numerical method simultaneously satisfies the
+time-varying source $\lambda(t)$ physics constraint and guarantees absolutely
+static tensor shapes throughout neural network training.
+
+---
+
 ## Mathematical Framework
 
 ### Governing equation
@@ -210,6 +333,12 @@ toymodel/
 │   ├── training/data_loader.py        #   Particle queue, analytical death rate
 │   └── *.png                          #   Results (potential, death rate, snapshots)
 │
+├── 03.1_asymmetric_potential/         # Asymmetric potential, fixed 2D death rate
+│   ├── train_asym_potential_multi.py  #   Learn 5 potential params (a,b,c,d,e), fixed γ
+│   ├── sweep_particles.py            #   Particle count sweep (N=2000–4000)
+│   ├── training/data_loader.py        #   2D death rate γ_select + γ_term, oval source
+│   └── sweep/                         #   Per-N results + summary_params_vs_N.png
+│
 ├── 04_source_death_semi_nn/           # NN Φ + parametric death rate γ(y_c, k)
 │   ├── train_sd.py                    #   Single-snapshot training (SourceDeathModel)
 │   ├── models/                        #   PotentialNN + DeathRateParametric
@@ -252,6 +381,7 @@ toymodel/
 | Parametric source+death | ✅ Done | `03_*/train_sd_parametric*.py` — identifies coupling degeneracy, multi-timepoint breaks it |
 | Semi-NN source+death | ✅ Done | `04_*/train_sd.py` — NN Φ + parametric γ |
 | Full NN source+death | ✅ Done | `05_*/train_sd_nn_multi.py` — reduced Φ(16,16) + y-only γ(8,8), symmetric potential recovered |
+| Asymmetric potential (fixed death) | ✅ Done | `03.1_*/train_asym_potential_multi.py` — 5-param potential + 2D death, confirms a-c degeneracy is fundamental |
 | Regional mass matching | ⚠️ Ineffective | data sparsity in y>2 prevents y_c/k degeneracy breaking |
 | Spectral normalization | 🔲 Planned | Lipschitz constraint on NN weights |
 | Weight decay tuning | 🔲 Planned | Stronger L2 to bias toward smooth mappings |
@@ -1027,6 +1157,68 @@ neural network inference with two critical architectural insights:
 >   potential to be exactly symmetric without any extra parameters, eliminating
 >   residual asymmetry from finite-sample noise. Requires domain knowledge
 >   about the system's symmetry group.
+
+**Step 5a-v — Asymmetric potential with fixed 2D death rate**
+
+Extend the parametric model to test whether potential asymmetry and a
+biologically-motivated death rate can be recovered from single-snapshot data.
+The potential gains a linear tilt `e·x`, and the death rate is fixed as a
+2D function combining thymic-selection-like death (corridor at x≈0) and a
+terminal boundary.
+
+> **Implementation notes (2026-04-17):**
+>
+> Created `03.1_asymmetric_potential/` with a self-contained training script
+> and a particle count sweep.
+>
+> **Potential:** H = -(y-a)x² + exp(b)x⁴ - cy + exp(d)y⁴ + e·x
+> (5 learnable params: a, b, c, d, e)
+>
+> **Death rate (FIXED, not learned):**
+>
+> ```
+> γ(x,y) = γ_select(x,y) + γ_term(y)
+> γ_select = A·exp(-x²/(2w_x²))·softplus(k1·(y - y_select))   # selection corridor
+> γ_term   = B·softplus(k2·(y - y_max))                         # terminal boundary
+> ```
+>
+> Parameters: A=2, w_x=0.5, k1=1, y_select=1, B=5, k2=3, y_max=3,
+> GAMMA_MAX=50 (soft clamp).
+>
+> **Source (FIXED):** oval Gaussian, μ=(0,-1), σ_x=0.25, σ_y=0.10.
+>
+> **Training:** single steady-state snapshot at t=10, 500 epochs, Adam
+> lr=0.01, L=L_MMD (no mass loss since death is fixed).
+>
+> **Results (N=2000, best epoch 402, loss=0.0020):**
+>
+> | Parameter | Learned | True | Error |
+> |-----------|---------|------|-------|
+> | a | -0.807 | -1.0 | +0.193 |
+> | b | -1.691 | -1.6 | -0.091 |
+> | c | +3.049 | +3.5 | -0.451 |
+> | d | -1.210 | -1.2 | -0.010 |
+> | e | +0.550 | +0.7 | -0.150 |
+>
+> **Particle count sweep (N=2000–4000, step 200):**
+>
+> Ran 11 configurations via `sweep_particles.py`. Key findings:
+>
+> - **b and d**: excellently recovered across all N (error < 0.05)
+> - **c**: consistently undershoots (~3.0–3.2 vs 3.5), coupled with a —
+>   confirms the **a-c degeneracy is fundamental** to single-snapshot matching
+> - **a**: similarly offset (~-0.82 to -0.87 vs -1.0)
+> - **e**: stochastic variation (0.57–0.78) centered near truth 0.7
+> - **Loss**: decreases with N (better MMD resolution) but parameter accuracy
+>   doesn't systematically improve — the degeneracy is structural, not
+>   a sampling issue
+>
+> **Conclusion:** increasing particle count improves loss landscape smoothness
+> but cannot break the a-c coupling degeneracy. Multi-timepoint matching
+> (as demonstrated in Step 5a-ii) remains the only known approach to resolve
+> this. The 2D death rate and asymmetric potential work correctly as fixed
+> components, validating the framework for future extensions where the death
+> rate is also learned.
 
 **Step 5b — Synthetic benchmark: binary choice + proliferation**
 

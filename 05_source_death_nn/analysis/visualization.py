@@ -20,13 +20,17 @@ def _eval_grid(fn, xlim, ylim, n_grid):
 # ------------------------------------------------------------------
 
 def plot_nn_landscape(model, xlim=(-5, 5), ylim=(-2, 4), n_grid=200,
-                      ax=None, title="Learned Potential"):
+                      ax=None, title="Learned Potential", vmin=None, vmax=None):
     """Contour plot of the NN potential."""
     X, Y, Z = _eval_grid(model.potential, xlim, ylim, n_grid)
 
     if ax is None:
         fig, ax = plt.subplots(figsize=(7, 5))
-    cf = ax.contourf(X, Y, Z, levels=30, cmap=cm.viridis)
+    if vmin is not None and vmax is not None:
+        levels = np.linspace(vmin, vmax, 31)
+        cf = ax.contourf(X, Y, Z, levels=levels, cmap=cm.viridis, extend='both')
+    else:
+        cf = ax.contourf(X, Y, Z, levels=30, cmap=cm.viridis)
     plt.colorbar(cf, ax=ax, label=r'$\Phi(z)$')
     ax.set_xlabel('x'); ax.set_ylabel('y')
     ax.set_title(title)

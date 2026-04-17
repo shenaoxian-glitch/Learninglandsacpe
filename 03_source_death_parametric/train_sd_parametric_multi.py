@@ -575,11 +575,12 @@ for col, (t_vis, step_vis) in enumerate(zip(VIS_TIMES, VIS_STEPS)):
     tgt_py_i = tgt_all_py[step_vis]
     tgt_S_i = tgt_all_S[step_vis]
     tgt_w_i = np.array(jnp.clip(jnp.exp(tgt_S_i), 0.0, 1.0))
+    alive = tgt_w_i > 1e-6  # exclude dormant particles (S=-100)
 
     ax_tgt.contourf(np.array(Xg), np.array(Yg), np.array(Z_true),
                     levels=30, cmap='viridis', alpha=0.3)
-    sc = ax_tgt.scatter(np.array(tgt_px_i), np.array(tgt_py_i),
-                        c=tgt_w_i, cmap='coolwarm', s=6, alpha=0.5,
+    sc = ax_tgt.scatter(np.array(tgt_px_i[alive]), np.array(tgt_py_i[alive]),
+                        c=tgt_w_i[alive], cmap='coolwarm', s=6, alpha=0.5,
                         vmin=0, vmax=1, edgecolors='none')
     ax_tgt.set_xlim(-5, 5); ax_tgt.set_ylim(-2, 4)
     ax_tgt.set_title(f'Target t={t_vis:.0f}')
@@ -592,11 +593,12 @@ for col, (t_vis, step_vis) in enumerate(zip(VIS_TIMES, VIS_STEPS)):
     sim_py_i = sim_all_py[step_vis]
     sim_S_i = sim_all_S[step_vis]
     sim_w_i = np.array(jnp.clip(jnp.exp(sim_S_i), 0.0, 1.0))
+    alive = sim_w_i > 1e-6  # exclude dormant particles (S=-100)
 
     ax_sim.contourf(np.array(Xg), np.array(Yg), np.array(Z_learned),
                     levels=30, cmap='viridis', alpha=0.3)
-    sc = ax_sim.scatter(np.array(sim_px_i), np.array(sim_py_i),
-                        c=sim_w_i, cmap='coolwarm', s=6, alpha=0.5,
+    sc = ax_sim.scatter(np.array(sim_px_i[alive]), np.array(sim_py_i[alive]),
+                        c=sim_w_i[alive], cmap='coolwarm', s=6, alpha=0.5,
                         vmin=0, vmax=1, edgecolors='none')
     ax_sim.set_xlim(-5, 5); ax_sim.set_ylim(-2, 4)
     ax_sim.set_title(f'Learned t={t_vis:.0f}')
