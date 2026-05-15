@@ -1,0 +1,122 @@
+{
+  "config": {
+    "seed_target": 1,
+    "n_particles": 1000,
+    "sigma_true": 1.5,
+    "sigma_init": 1.0,
+    "n_epochs": 1500,
+    "patience": 600,
+    "lam_mass": 5.0,
+    "confinement": "none"
+  },
+  "true_cp": {
+    "x_min_left": -2.028056112224449,
+    "x_min_right": 1.8036072144288573,
+    "x_saddle": 0.23246492985971923,
+    "phi_min_left": -5.904876232147217,
+    "phi_min_right": -3.211678981781006,
+    "phi_saddle": -1.6489202976226807,
+    "barrier": 4.255955934524536,
+    "well_asymmetry": -2.693197250366211
+  },
+  "fixed_sigma_runs": {
+    "2": {
+      "best_loss": 0.016328927129507065,
+      "best_epoch": 1485,
+      "learned_cp": {
+        "x_min_left": -2.124248496993988,
+        "x_min_right": 3.006012024048095,
+        "x_saddle": -0.008016032064128709,
+        "phi_min_left": -9.06821060180664,
+        "phi_min_right": -9.61660385131836,
+        "phi_saddle": -2.8775634765625,
+        "barrier": 6.739040374755859,
+        "well_asymmetry": 0.5483932495117188
+      },
+      "sigma": 1.5
+    },
+    "42": {
+      "best_loss": 0.02926567569375038,
+      "best_epoch": 1449,
+      "learned_cp": {
+        "x_min_left": -2.6212424849699403,
+        "x_min_right": 2.5571142284569133,
+        "x_saddle": 0.29659318637274534,
+        "phi_min_left": -11.829720497131348,
+        "phi_min_right": -9.588981628417969,
+        "phi_saddle": -2.4767398834228516,
+        "barrier": 9.352980613708496,
+        "well_asymmetry": -2.240738868713379
+      },
+      "sigma": 1.5
+    },
+    "256": {
+      "best_loss": 0.023795221000909805,
+      "best_epoch": 1401,
+      "learned_cp": {
+        "x_min_left": -2.396793587174349,
+        "x_min_right": 2.396793587174348,
+        "x_saddle": 0.2164328657314627,
+        "phi_min_left": -11.145218849182129,
+        "phi_min_right": -8.610868453979492,
+        "phi_saddle": -3.017902374267578,
+        "barrier": 8.12731647491455,
+        "well_asymmetry": -2.5343503952026367
+      },
+      "sigma": 1.5
+    }
+  },
+  "learnable_sigma_runs": [
+    {
+      "seed_learned": 2,
+      "best_loss": 0.1409849226474762,
+      "best_epoch": 1492,
+      "final_sigma": 0.4212937355041504,
+      "best_sigma": 0.4212297797203064,
+      "learned_cp": {
+        "x_min_left": null,
+        "x_min_right": null,
+        "x_saddle": null,
+        "phi_min_left": null,
+        "phi_min_right": null,
+        "phi_saddle": null,
+        "barrier": null,
+        "well_asymmetry": null
+      }
+    },
+    {
+      "seed_learned": 42,
+      "best_loss": 0.13959550857543945,
+      "best_epoch": 1495,
+      "final_sigma": 0.46225273609161377,
+      "best_sigma": 0.46232083439826965,
+      "learned_cp": {
+        "x_min_left": null,
+        "x_min_right": null,
+        "x_saddle": null,
+        "phi_min_left": null,
+        "phi_min_right": null,
+        "phi_saddle": null,
+        "barrier": null,
+        "well_asymmetry": null
+      }
+    },
+    {
+      "seed_learned": 256,
+      "best_loss": 0.004410180263221264,
+      "best_epoch": 1459,
+      "final_sigma": 0.35722649097442627,
+      "best_sigma": 0.35729822516441345,
+      "learned_cp": {
+        "x_min_left": -3.823647294589178,
+        "x_min_right": 3.326653306613226,
+        "x_saddle": 0.12024048096192352,
+        "phi_min_left": -10.109294891357422,
+        "phi_min_right": -7.305680751800537,
+        "phi_saddle": -2.0101065635681152,
+        "barrier": 8.099187850952148,
+        "well_asymmetry": -2.8036141395568848
+      }
+    }
+  ]
+}

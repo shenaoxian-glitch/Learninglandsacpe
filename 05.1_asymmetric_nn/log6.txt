@@ -1,0 +1,85 @@
+=================================================================
+Model 5.1c: NN potential + fixed quartic + FIXED 2D death rate
+=================================================================
+  N_particles = 1000
+  T_final = 6.0, dt = 0.01, n_steps = 600
+  sigma = 2.5 (fixed, exploration noise)
+  Training snapshot: t = 6.0 (single steady-state)
+  Potential: Phi_nn(2->16->16->1) + exp(b)x^4 + exp(d)y^4 (b,d fixed)
+  Death rate: FIXED 2D analytical (not learned)
+  Loss = L_MMD + 5.0*L_mass
+
+  Ground-truth potential (asymmetric):
+    H = -(y-a)x^2 + exp(b)x^4 - cy + exp(d)y^4 + e*x
+    a=-1.0, b=-1.6, c=3.5, d=-1.2, e=0.7
+  Ground-truth death rate (2D, from 3.1):
+    gamma_select = A*exp(-x^2/(2*w_x^2))*softplus(k1*(y-y_select))
+    gamma_term   = B*softplus(k2*(y-y_max))
+    A=2.0, w_x=0.5, k1=1.0, y_select=1.0
+    B=5.0, k2=3.0, y_max=3.0
+  Source: oval Gaussian, mu=(0,-1), sigma_x=0.25, sigma_y=0.10
+
+Generating ground-truth snapshot ...
+  t=6.0: mass=366.37, ~999 alive particles
+  Training queue: 1000 particles
+
+SourceDeathModel created:
+  Phi = Phi_nn(2->16->16->1) + exp(-1.6)*x^4 + exp(-1.2)*y^4
+  Phi_nn: 337 learnable params (c_conf=0)
+  Quartic conf: exp(b)=0.2019, exp(d)=0.3012 (fixed)
+  gamma: FixedDeathRate2D (0 learnable params)
+  Total learnable: 337 params
+
+Training for 400 epochs (single snapshot at t=6.0) ...
+-----------------------------------------------------------------
+Epoch    0: Loss=1.19515 (MMD=0.28937, Mass=0.18116)
+Epoch   10: Loss=1.06310 (MMD=0.29183, Mass=0.15426)
+Epoch   20: Loss=0.90956 (MMD=0.26578, Mass=0.12876)
+Epoch   30: Loss=0.74226 (MMD=0.26847, Mass=0.09476)
+Epoch   40: Loss=0.59888 (MMD=0.25669, Mass=0.06844)
+Epoch   50: Loss=0.40147 (MMD=0.25612, Mass=0.02907)
+Epoch   60: Loss=0.29458 (MMD=0.23438, Mass=0.01204)
+Epoch   70: Loss=0.22595 (MMD=0.22021, Mass=0.00115)
+Epoch   80: Loss=0.24134 (MMD=0.24079, Mass=0.00011)
+Epoch   90: Loss=0.23057 (MMD=0.22840, Mass=0.00044)
+Epoch  100: Loss=0.24101 (MMD=0.24086, Mass=0.00003)
+Epoch  110: Loss=0.23100 (MMD=0.23057, Mass=0.00009)
+Epoch  120: Loss=0.23610 (MMD=0.23590, Mass=0.00004)
+Epoch  130: Loss=0.23733 (MMD=0.23684, Mass=0.00010)
+Epoch  140: Loss=0.22416 (MMD=0.22415, Mass=0.00000)
+Epoch  150: Loss=0.22570 (MMD=0.22471, Mass=0.00020)
+Epoch  160: Loss=0.22057 (MMD=0.22031, Mass=0.00005)
+Epoch  170: Loss=0.23496 (MMD=0.23405, Mass=0.00018)
+Epoch  180: Loss=0.23109 (MMD=0.23103, Mass=0.00001)
+Epoch  190: Loss=0.22049 (MMD=0.22016, Mass=0.00007)
+Epoch  200: Loss=0.22116 (MMD=0.22032, Mass=0.00017)
+Epoch  210: Loss=0.21321 (MMD=0.21301, Mass=0.00004)
+Epoch  220: Loss=0.22385 (MMD=0.22376, Mass=0.00002)
+Epoch  230: Loss=0.22022 (MMD=0.21963, Mass=0.00012)
+Epoch  240: Loss=0.21507 (MMD=0.21503, Mass=0.00001)
+Epoch  250: Loss=0.20315 (MMD=0.20315, Mass=0.00000)
+Epoch  260: Loss=0.20905 (MMD=0.20904, Mass=0.00000)
+Epoch  270: Loss=0.20726 (MMD=0.20724, Mass=0.00000)
+Epoch  280: Loss=0.19751 (MMD=0.19750, Mass=0.00000)
+Epoch  290: Loss=0.20784 (MMD=0.20632, Mass=0.00030)
+Epoch  300: Loss=0.18702 (MMD=0.18610, Mass=0.00018)
+Epoch  310: Loss=0.18789 (MMD=0.18453, Mass=0.00067)
+Epoch  320: Loss=0.18329 (MMD=0.18283, Mass=0.00009)
+Epoch  330: Loss=0.15977 (MMD=0.15954, Mass=0.00005)
+Epoch  340: Loss=0.14777 (MMD=0.14773, Mass=0.00001)
+Epoch  350: Loss=0.15527 (MMD=0.15279, Mass=0.00050)
+Epoch  360: Loss=0.13629 (MMD=0.13100, Mass=0.00106)
+Epoch  370: Loss=0.12330 (MMD=0.12329, Mass=0.00000)
+Epoch  380: Loss=0.10616 (MMD=0.10465, Mass=0.00030)
+Epoch  390: Loss=0.09520 (MMD=0.09474, Mass=0.00009)
+Restored best model from epoch 399 (loss=0.076773)
+Model saved to trained_model_sd_nn_asym_conf.eqx
+
+  Force magnitude: true max=43.6 mean=12.0, learned max=44.2 mean=12.8
+
+Done. Figures saved:
+  training_nn_asym_conf.png
+  force_field_conf.png
+  landscape_nn_asym_conf.png
+  snapshots_nn_asym_conf.png
+  death_rate_2d_conf.png

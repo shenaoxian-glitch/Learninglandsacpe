@@ -1,0 +1,198 @@
+=================================================================
+Target particle count sweep
+=================================================================
+  seed_learned = 99, N_learned = 1000
+  N_target     = [2000, 4000, 6000, 8000, 10000, 12000]
+  target_seeds = [1, 2, 3, 4, 5, 6]
+  sigma        = 1.5 (fixed)
+  epochs=800, patience=300, lam_mass=5.0
+  Total runs: 6
+=================================================================
+
+  True CP: barrier=4.256, asym=-2.693
+
+Preparing analysis batch (seed=777, N=2000) ...
+  Simulating analysis batch through true dynamics ...
+  Target: frac_left=0.618, final_mass=834.6
+  Target zones: {'left_well': 0.533951997756958, 'saddle': 0.16786104440689087, 'right_well': 0.2981869876384735, 'source': 0.10761228948831558, 'death_zone': 0.20315369963645935}
+
+==================================================
+  N_target = 2000, seed_target = 1
+==================================================
+  Generating target (seed=1, N=2000) ...
+  Target mass=834.8
+
+  N_target=2000
+    tgt_mass=834.8 (N=2000) -> scaled=417.4 (N=1000)
+    Epoch    0: Loss=0.71646 (MMD=0.52189, Mass=0.03891)
+    Epoch  100: Loss=0.45060 (MMD=0.44691, Mass=0.00074)
+    Epoch  200: Loss=0.21533 (MMD=0.21325, Mass=0.00041)
+    Epoch  300: Loss=0.07543 (MMD=0.07497, Mass=0.00009)
+    Epoch  400: Loss=0.05829 (MMD=0.05620, Mass=0.00042)
+    Epoch  500: Loss=0.04242 (MMD=0.04169, Mass=0.00015)
+    Epoch  600: Loss=0.03053 (MMD=0.02974, Mass=0.00016)
+    Epoch  700: Loss=0.01797 (MMD=0.01793, Mass=0.00001)
+    Best epoch 784, loss=0.008459
+    CP: x_L=-2.717, x_R=2.285, barrier=9.772
+    Analyzing (N_analysis=2000) ...
+    Bifurcation: 0.632L / 0.368R (target: 0.618/0.382)
+    Final mass: 831.9 (target: 834.6)
+    Zones: {'left_well': 0.5515632629394531, 'saddle': 0.1398790180683136, 'right_well': 0.3085577189922333, 'source': 0.10439874231815338, 'death_zone': 0.20445680618286133}
+
+==================================================
+  N_target = 4000, seed_target = 2
+==================================================
+  Generating target (seed=2, N=4000) ...
+  Target mass=1657.6
+
+  N_target=4000
+    tgt_mass=1657.6 (N=4000) -> scaled=414.4 (N=1000)
+    Epoch    0: Loss=0.72410 (MMD=0.51196, Mass=0.04243)
+    Epoch  100: Loss=0.44924 (MMD=0.44550, Mass=0.00075)
+    Epoch  200: Loss=0.22569 (MMD=0.22446, Mass=0.00024)
+    Epoch  300: Loss=0.07231 (MMD=0.07087, Mass=0.00029)
+    Epoch  400: Loss=0.05913 (MMD=0.05717, Mass=0.00039)
+    Epoch  500: Loss=0.04345 (MMD=0.04300, Mass=0.00009)
+    Epoch  600: Loss=0.03497 (MMD=0.03495, Mass=0.00000)
+    Epoch  700: Loss=0.02467 (MMD=0.02458, Mass=0.00002)
+    Best epoch 796, loss=0.016061
+    CP: x_L=-2.733, x_R=2.285, barrier=15.456
+    Analyzing (N_analysis=2000) ...
+    Bifurcation: 0.574L / 0.426R (target: 0.618/0.382)
+    Final mass: 825.1 (target: 834.6)
+    Zones: {'left_well': 0.5194772481918335, 'saddle': 0.1055455356836319, 'right_well': 0.3749772012233734, 'source': 0.09266121685504913, 'death_zone': 0.24061580002307892}
+
+==================================================
+  N_target = 6000, seed_target = 3
+==================================================
+  Generating target (seed=3, N=6000) ...
+  Target mass=2508.7
+
+  N_target=6000
+    tgt_mass=2508.7 (N=6000) -> scaled=418.1 (N=1000)
+    Epoch    0: Loss=0.72091 (MMD=0.53025, Mass=0.03813)
+    Epoch  100: Loss=0.45416 (MMD=0.45037, Mass=0.00076)
+    Epoch  200: Loss=0.20746 (MMD=0.20549, Mass=0.00039)
+    Epoch  300: Loss=0.07133 (MMD=0.07089, Mass=0.00009)
+    Epoch  400: Loss=0.05618 (MMD=0.05179, Mass=0.00088)
+    Epoch  500: Loss=0.03669 (MMD=0.03668, Mass=0.00000)
+    Epoch  600: Loss=0.02722 (MMD=0.02645, Mass=0.00015)
+    Epoch  700: Loss=0.01641 (MMD=0.01637, Mass=0.00001)
+    Best epoch 784, loss=0.007787
+    CP: x_L=-2.733, x_R=2.253, barrier=9.587
+    Analyzing (N_analysis=2000) ...
+    Bifurcation: 0.647L / 0.353R (target: 0.618/0.382)
+    Final mass: 833.8 (target: 834.6)
+    Zones: {'left_well': 0.5644962191581726, 'saddle': 0.14424291253089905, 'right_well': 0.29126089811325073, 'source': 0.10411165654659271, 'death_zone': 0.19910109043121338}
+
+==================================================
+  N_target = 8000, seed_target = 4
+==================================================
+  Generating target (seed=4, N=8000) ...
+  Target mass=3338.3
+
+  N_target=8000
+    tgt_mass=3338.3 (N=8000) -> scaled=417.3 (N=1000)
+    Epoch    0: Loss=0.71772 (MMD=0.52240, Mass=0.03906)
+    Epoch  100: Loss=0.45339 (MMD=0.44965, Mass=0.00075)
+    Epoch  200: Loss=0.21765 (MMD=0.21624, Mass=0.00028)
+    Epoch  300: Loss=0.07061 (MMD=0.07012, Mass=0.00010)
+    Epoch  400: Loss=0.05661 (MMD=0.05410, Mass=0.00050)
+    Epoch  500: Loss=0.04355 (MMD=0.04121, Mass=0.00047)
+    Epoch  600: Loss=0.03221 (MMD=0.03090, Mass=0.00026)
+    Epoch  700: Loss=0.02259 (MMD=0.02257, Mass=0.00000)
+    Best epoch 784, loss=0.011241
+    CP: x_L=-2.766, x_R=2.236, barrier=14.151
+    Analyzing (N_analysis=2000) ...
+    Bifurcation: 0.615L / 0.385R (target: 0.618/0.382)
+    Final mass: 830.6 (target: 834.6)
+    Zones: {'left_well': 0.5529175996780396, 'saddle': 0.11593956500291824, 'right_well': 0.3311429023742676, 'source': 0.09317183494567871, 'death_zone': 0.2193414270877838}
+
+==================================================
+  N_target = 10000, seed_target = 5
+==================================================
+  Generating target (seed=5, N=10000) ...
+  Target mass=4184.7
+
+  N_target=10000
+    tgt_mass=4184.7 (N=10000) -> scaled=418.5 (N=1000)
+    Epoch    0: Loss=0.71346 (MMD=0.52483, Mass=0.03773)
+    Epoch  100: Loss=0.45095 (MMD=0.44710, Mass=0.00077)
+    Epoch  200: Loss=0.20721 (MMD=0.20583, Mass=0.00028)
+    Epoch  300: Loss=0.07280 (MMD=0.07274, Mass=0.00001)
+    Epoch  400: Loss=0.05626 (MMD=0.05601, Mass=0.00005)
+    Epoch  500: Loss=0.04088 (MMD=0.04044, Mass=0.00009)
+    Epoch  600: Loss=0.02985 (MMD=0.02956, Mass=0.00006)
+    Epoch  700: Loss=0.01994 (MMD=0.01990, Mass=0.00001)
+    Best epoch 784, loss=0.009493
+    CP: x_L=-2.733, x_R=2.236, barrier=10.268
+    Analyzing (N_analysis=2000) ...
+    Bifurcation: 0.623L / 0.377R (target: 0.618/0.382)
+    Final mass: 833.0 (target: 834.6)
+    Zones: {'left_well': 0.5510611534118652, 'saddle': 0.13593576848506927, 'right_well': 0.3130031228065491, 'source': 0.10303643345832825, 'death_zone': 0.20107132196426392}
+
+==================================================
+  N_target = 12000, seed_target = 6
+==================================================
+  Generating target (seed=6, N=12000) ...
+  Target mass=5023.1
+
+  N_target=12000
+    tgt_mass=5023.1 (N=12000) -> scaled=418.6 (N=1000)
+    Epoch    0: Loss=0.71544 (MMD=0.52745, Mass=0.03760)
+    Epoch  100: Loss=0.45781 (MMD=0.45407, Mass=0.00075)
+    Epoch  200: Loss=0.20619 (MMD=0.20520, Mass=0.00020)
+    Epoch  300: Loss=0.06621 (MMD=0.06618, Mass=0.00001)
+    Epoch  400: Loss=0.05281 (MMD=0.05109, Mass=0.00034)
+    Epoch  500: Loss=0.03948 (MMD=0.03796, Mass=0.00030)
+    Epoch  600: Loss=0.02886 (MMD=0.02748, Mass=0.00028)
+    Epoch  700: Loss=0.02064 (MMD=0.02053, Mass=0.00002)
+    Best epoch 784, loss=0.009506
+    CP: x_L=-2.766, x_R=2.301, barrier=14.396
+    Analyzing (N_analysis=2000) ...
+    Bifurcation: 0.603L / 0.397R (target: 0.618/0.382)
+    Final mass: 831.5 (target: 834.6)
+    Zones: {'left_well': 0.5423574447631836, 'saddle': 0.11594443023204803, 'right_well': 0.34169816970825195, 'source': 0.09661059826612473, 'death_zone': 0.22742775082588196}
+
+Saved replot_data.npz, results.json
+Saved summary_loss.png
+Saved summary_critical_points.png
+Saved summary_potential_overlay.png
+Saved summary_force_overlay.png
+Saved analysis_mass_curves.png
+Saved analysis_bifurcation.png
+Saved analysis_marginals_1.png
+Saved analysis_marginals_2.png
+Saved analysis_decay_curves.png
+Saved analysis_trajectories.png
+Saved analysis_zones.png
+Saved analysis_summary.png
+
+================================================================================
+Summary: N_learned=1000, seed_learned=99, target_seeds=[1, 2, 3, 4, 5, 6]
+  True: barrier=4.256, x_L=-2.028, x_R=1.804
+================================================================================
+  Ntgt        Loss   Epoch     Barrier      x_left     x_right    x_saddle
+----------------------------------------------------------------------
+  2000    0.008459     784      9.7717     -2.7174      2.2846      0.2164
+  4000    0.016061     796     15.4555     -2.7335      2.2846      0.1523
+  6000    0.007787     784      9.5868     -2.7335      2.2525      0.2966
+  8000    0.011241     784     14.1514     -2.7655      2.2365      0.1683
+ 10000    0.009493     784     10.2681     -2.7335      2.2365      0.2004
+ 12000    0.009506     784     14.3957     -2.7655      2.3006      0.1683
+
+================================================================================
+Distribution analysis (N_analysis=2000, seed=777)
+Target: frac_left=0.618, final_mass=834.6
+Target zones: left_well=0.534  saddle=0.168  right_well=0.298  source=0.108  death_zone=0.203
+================================================================================
+  Ntgt   frac_L   frac_R     mass   left_w   saddle  right_w   source    death
+--------------------------------------------------------------------------------
+  2000    0.632    0.368    831.9    0.552    0.140    0.309    0.104    0.204
+  4000    0.574    0.426    825.1    0.519    0.106    0.375    0.093    0.241
+  6000    0.647    0.353    833.8    0.564    0.144    0.291    0.104    0.199
+  8000    0.615    0.385    830.6    0.553    0.116    0.331    0.093    0.219
+ 10000    0.623    0.377    833.0    0.551    0.136    0.313    0.103    0.201
+ 12000    0.603    0.397    831.5    0.542    0.116    0.342    0.097    0.227
+
+All outputs saved to /Users/leo/Desktop/learning_lanscapes/toymodel/05.1_asymmetric_nn/sweep_ntarget/

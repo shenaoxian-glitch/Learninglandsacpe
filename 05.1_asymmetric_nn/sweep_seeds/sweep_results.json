@@ -1,0 +1,203 @@
+{
+  "config": {
+    "seed_target": 1,
+    "n_particles": 4000,
+    "sigma": 1.5,
+    "n_epochs": 800,
+    "patience": 400,
+    "lam_mass": 5.0,
+    "barrier_y_slice": 0.5
+  },
+  "true_cp": {
+    "x_min_left": -2.028056112224449,
+    "x_min_right": 1.8036072144288573,
+    "x_saddle": 0.23246492985971923,
+    "phi_min_left": -5.904876232147217,
+    "phi_min_right": -3.211678981781006,
+    "phi_saddle": -1.6489202976226807,
+    "barrier": 4.255955934524536,
+    "well_asymmetry": -2.693197250366211
+  },
+  "runs": [
+    {
+      "seed_learned": 2,
+      "best_loss": 0.008792673237621784,
+      "best_epoch": 779,
+      "final_mmd": 0.009441614151000977,
+      "final_mass": 1.0046949682873674e-05,
+      "learned_cp": {
+        "x_min_left": -2.6693386773547094,
+        "x_min_right": 2.4769539078156306,
+        "x_saddle": 0.00801603206412782,
+        "phi_min_left": -13.316333770751953,
+        "phi_min_right": -10.016060829162598,
+        "phi_saddle": -1.623713493347168,
+        "barrier": 11.692620277404785,
+        "well_asymmetry": -3.3002729415893555
+      },
+      "ref_learned": 16.890159606933594
+    },
+    {
+      "seed_learned": 13,
+      "best_loss": 0.012231285683810711,
+      "best_epoch": 781,
+      "final_mmd": 0.01277303695678711,
+      "final_mass": 6.441286677727476e-05,
+      "learned_cp": {
+        "x_min_left": -2.749498997995992,
+        "x_min_right": 2.5250501002004,
+        "x_saddle": 0.18436873747494964,
+        "phi_min_left": -22.044910430908203,
+        "phi_min_right": -12.11555290222168,
+        "phi_saddle": -2.4705772399902344,
+        "barrier": 19.57433319091797,
+        "well_asymmetry": -9.929357528686523
+      },
+      "ref_learned": 28.89298439025879
+    },
+    {
+      "seed_learned": 42,
+      "best_loss": 0.011204567737877369,
+      "best_epoch": 790,
+      "final_mmd": 0.013916492462158203,
+      "final_mass": 4.104017079953337e-06,
+      "learned_cp": {
+        "x_min_left": -2.717434869739479,
+        "x_min_right": 2.5250501002004,
+        "x_saddle": 0.13627254509018005,
+        "phi_min_left": -19.49384880065918,
+        "phi_min_right": -12.14278793334961,
+        "phi_saddle": -2.7479586601257324,
+        "barrier": 16.74588966369629,
+        "well_asymmetry": -7.35106086730957
+      },
+      "ref_learned": -4.912083148956299
+    },
+    {
+      "seed_learned": 77,
+      "best_loss": 0.009834425523877144,
+      "best_epoch": 798,
+      "final_mmd": 0.010011434555053711,
+      "final_mass": 4.4397205783752725e-05,
+      "learned_cp": {
+        "x_min_left": -2.717434869739479,
+        "x_min_right": 2.492985971943887,
+        "x_saddle": 0.12024048096192352,
+        "phi_min_left": -16.793386459350586,
+        "phi_min_right": -10.959932327270508,
+        "phi_saddle": -2.7417945861816406,
+        "barrier": 14.051591873168945,
+        "well_asymmetry": -5.833454132080078
+      },
+      "ref_learned": -10.614185333251953
+    },
+    {
+      "seed_learned": 123,
+      "best_loss": 0.005700895097106695,
+      "best_epoch": 798,
+      "final_mmd": 0.006791114807128906,
+      "final_mass": 6.082736581447534e-05,
+      "learned_cp": {
+        "x_min_left": -2.525050100200401,
+        "x_min_right": 2.428857715430861,
+        "x_saddle": 0.05611222444889741,
+        "phi_min_left": -9.404342651367188,
+        "phi_min_right": -7.762596130371094,
+        "phi_saddle": -1.694366455078125,
+        "barrier": 7.7099761962890625,
+        "well_asymmetry": -1.6417465209960938
+      },
+      "ref_learned": 36.6883430480957
+    },
+    {
+      "seed_learned": 256,
+      "best_loss": 0.004846722353249788,
+      "best_epoch": 786,
+      "final_mmd": 0.0057430267333984375,
+      "final_mass": 2.2596639610128477e-05,
+      "learned_cp": {
+        "x_min_left": -2.5090180360721446,
+        "x_min_right": 2.2685370741482958,
+        "x_saddle": 0.1683366733466931,
+        "phi_min_left": -10.375530242919922,
+        "phi_min_right": -5.729884624481201,
+        "phi_saddle": -1.4923920631408691,
+        "barrier": 8.883138656616211,
+        "well_asymmetry": -4.645645618438721
+      },
+      "ref_learned": -2.5852227210998535
+    },
+    {
+      "seed_learned": 444,
+      "best_loss": 0.009973185136914253,
+      "best_epoch": 799,
+      "final_mmd": 0.009972095489501953,
+      "final_mass": 2.1786144088764559e-07,
+      "learned_cp": {
+        "x_min_left": -2.717434869739479,
+        "x_min_right": 2.5090180360721437,
+        "x_saddle": 0.15230460921843658,
+        "phi_min_left": -17.100154876708984,
+        "phi_min_right": -14.578071594238281,
+        "phi_saddle": -1.5137245655059814,
+        "barrier": 15.586430549621582,
+        "well_asymmetry": -2.522083282470703
+      },
+      "ref_learned": 4.16756534576416
+    },
+    {
+      "seed_learned": 678,
+      "best_loss": 0.010147614404559135,
+      "best_epoch": 793,
+      "final_mmd": 0.011024713516235352,
+      "final_mass": 5.935370427323505e-05,
+      "learned_cp": {
+        "x_min_left": -2.7014028056112225,
+        "x_min_right": 2.4769539078156306,
+        "x_saddle": 0.13627254509018005,
+        "phi_min_left": -16.614133834838867,
+        "phi_min_right": -11.138177871704102,
+        "phi_saddle": -2.8016300201416016,
+        "barrier": 13.812503814697266,
+        "well_asymmetry": -5.475955963134766
+      },
+      "ref_learned": -10.78148078918457
+    },
+    {
+      "seed_learned": 999,
+      "best_loss": 0.01113283634185791,
+      "best_epoch": 751,
+      "final_mmd": 0.01290273666381836,
+      "final_mass": 5.890408374398248e-06,
+      "learned_cp": {
+        "x_min_left": -2.7014028056112225,
+        "x_min_right": 2.5250501002004,
+        "x_saddle": 0.13627254509018005,
+        "phi_min_left": -18.701496124267578,
+        "phi_min_right": -12.26961612701416,
+        "phi_saddle": -2.581719398498535,
+        "barrier": 16.11977767944336,
+        "well_asymmetry": -6.431879997253418
+      },
+      "ref_learned": -14.491267204284668
+    },
+    {
+      "seed_learned": 2025,
+      "best_loss": 0.0037465665955096483,
+      "best_epoch": 799,
+      "final_mmd": 0.0036995410919189453,
+      "final_mass": 9.405123819306027e-06,
+      "learned_cp": {
+        "x_min_left": -2.525050100200401,
+        "x_min_right": 2.0601202404809618,
+        "x_saddle": 0.18436873747494964,
+        "phi_min_left": -10.059575080871582,
+        "phi_min_right": -3.8033761978149414,
+        "phi_saddle": -1.4317426681518555,
+        "barrier": 8.627832412719727,
+        "well_asymmetry": -6.256198883056641
+      },
+      "ref_learned": 10.854155540466309
+    }
+  ]
+}

@@ -345,11 +345,20 @@ toymodel/
 │   ├── training/, simulator/, analysis/
 │   └── *.png, *.eqx                   #   Results and trained model
 │
-└── 05_source_death_nn/                # NN Φ + NN γ(y), multi-timepoint (latest)
-    ├── train_sd_nn_multi.py           #   6-snapshot training, reduced architectures
-    ├── models/                        #   PotentialNN(16,16) + DeathRateNN(y_only, 8,8)
-    ├── training/, simulator/, analysis/
-    └── *.png, *.eqx                   #   Results and trained model
+├── 05_source_death_nn/                # NN Φ + NN γ(y), multi-timepoint
+│   ├── train_sd_nn_multi.py           #   6-snapshot training, reduced architectures
+│   ├── models/                        #   PotentialNN(16,16) + DeathRateNN(y_only, 8,8)
+│   ├── training/, simulator/, analysis/
+│   └── *.png, *.eqx                   #   Results and trained model
+│
+└── 05.1_asymmetric_nn/               # NN Φ + fixed 2D death, systematic sweeps
+    ├── train_sd_nn_asym_multi.py      #   Main training script (NN + confinement + 2D death)
+    ├── models/, training/, simulator/  #   Shared modules
+    ├── sweep_nparticles_v3/           #   N_learned sweep (200–6000), distribution analysis
+    ├── sweep_seeds/                   #   Optimization variance (10 seeds)
+    ├── learn_sigma/                   #   Learnable σ (with/without confinement)
+    ├── sweep_ntarget/                 #   N_target sweep (2000–12000)
+    └── summary_*.png, analysis_*.png  #   Per-sweep results
 ```
 
 **Shared modules** (copied into each subfolder that needs them):
@@ -382,6 +391,7 @@ toymodel/
 | Semi-NN source+death | ✅ Done | `04_*/train_sd.py` — NN Φ + parametric γ |
 | Full NN source+death | ✅ Done | `05_*/train_sd_nn_multi.py` — reduced Φ(16,16) + y-only γ(8,8), symmetric potential recovered |
 | Asymmetric potential (fixed death) | ✅ Done | `03.1_*/train_asym_potential_multi.py` — 5-param potential + 2D death, confirms a-c degeneracy is fundamental |
+| NN asymmetric + systematic sweeps | ✅ Done | `05.1_*/` — N_learned, N_target, seed, σ sweeps; distribution diagnostics; N_target≥2000 sufficient |
 | Regional mass matching | ⚠️ Ineffective | data sparsity in y>2 prevents y_c/k degeneracy breaking |
 | Spectral normalization | 🔲 Planned | Lipschitz constraint on NN weights |
 | Weight decay tuning | 🔲 Planned | Stronger L2 to bias toward smooth mappings |
@@ -1219,6 +1229,88 @@ terminal boundary.
 > this. The 2D death rate and asymmetric potential work correctly as fixed
 > components, validating the framework for future extensions where the death
 > rate is also learned.
+
+**Step 5.1 — NN potential + fixed 2D death rate: systematic sweeps**
+
+Extends Step 5a-v from parametric (5-param) to neural network potential, while
+keeping the 2D death rate and confinement fixed. The NN potential
+(`PotentialNN` 2→16→16→1, 337 params, wrapped with exact quartic confinement)
+learns the asymmetric landscape from snapshot data via weighted MMD + mass loss.
+
+This step focuses on **systematic experimental characterization** through four
+sweeps, plus distribution-level diagnostics that compare observable particle
+characteristics (not the unobservable potential) between target and learned models.
+
+> **Experiments and key findings:**
+>
+> **1. N_learned sweep** (`sweep_nparticles_v3/`): Fixed target (N=8000,
+> seed=1), vary learned particle count N=200–6000, fixed seed=2.
+>
+> - Loss improves with N: 0.027 (N=200) → 0.009 (N=4000), plateaus at N≈3000
+> - Barrier height consistently overestimated: 10–20× vs true 4.3 — the NN
+>   potential learns deeper wells than ground truth to compensate for
+>   limited expressivity
+> - Well positions converge toward truth but remain ~0.6 units too wide
+>
+> **2. Distribution analysis** (`sweep_nparticles_v3/analyze_distributions.py`):
+> For each trained model, simulates a fresh analysis batch (N=2000, seed=99)
+> through both true dynamics and learned model to compare observable
+> characteristics:
+>
+> - **Mass curves M(t):** excellent match across all N (death rate is exact)
+> - **Decay curves:** near-perfect overlap (same death rate, same σ)
+> - **Bifurcation fraction:** learned models plateau ~1% short of target
+>   (0.63 vs 0.64), with the saddle zone systematically depleted
+>   (target 16.5% → learned 9–11%) and right well overweight
+>   (target 28.7% → learned 32–36%)
+> - **Conclusion:** the potential barrier is too high and too wide, trapping
+>   particles in wells rather than allowing saddle crossing. This is a
+>   structural limitation of the NN + MMD framework, not a sampling issue.
+>
+> **3. Seed sweep** (`sweep_seeds/`): Fixed N=1000, 10 different seeds
+> [2, 13, 42, 77, 123, 256, 444, 678, 999, 2025].
+>
+> - All seeds find double-well topology (no failures)
+> - Loss range: 0.008–0.016 (2× variance)
+> - Barrier height varies 8–17 (true 4.3) — consistent overestimation
+> - Well positions and saddle locations vary by ~0.3 units across seeds
+> - Force profiles show consistent shape but varying amplitude
+>
+> **4. Learnable sigma** (`learn_sigma/`): Test whether σ can be learned
+> jointly with the NN potential. Two conditions: with exact confinement
+> (true b, d) and without confinement (pure NN).
+>
+> - **With confinement:** σ overshoots to 1.72–2.02 (true 1.5). Confinement
+>   anchors the potential scale, so σ inflates to compensate.
+> - **Without confinement:** σ collapses to 0.36–0.46. The NN flattens the
+>   potential and reduces σ to maintain the same effective dynamics (Φ/σ²
+>   degeneracy). 2 of 3 seeds fail to find bifurcation.
+> - **Conclusion:** Φ/σ² degeneracy prevents reliable σ learning. Must fix σ
+>   or anchor the potential scale independently.
+>
+> **5. N_target sweep** (`sweep_ntarget/`): Fixed N_learned=1000 (seed=99),
+> vary target data size N_target=2000–12000 with different seeds per N_target.
+>
+> - Loss and distribution metrics show **no systematic improvement** as
+>   N_target increases from 2000 to 12000
+> - Variation is dominated by target seed randomness, not data size
+> - **Conclusion:** N_target=2000 is already sufficient. The bottleneck is
+>   N_learned (model simulation quality), not training data quantity. This is
+>   encouraging for real data applications where cell counts may be limited.
+>
+> **Overall conclusions for Step 5.1:**
+>
+> 1. The NN potential reliably learns the correct bifurcation topology
+>    (double-well with asymmetry) but systematically overestimates the barrier
+> 2. Observable particle characteristics (mass, decay, bifurcation ratio) are
+>    well-recovered despite potential inaccuracies — the dynamics are more
+>    robust than the potential itself
+> 3. The saddle zone depletion is a structural artifact of MMD with isotropic
+>    kernels: the bw=100 kernel cannot distinguish bifurcated from
+>    non-bifurcated x-distributions
+> 4. Training data requirements are modest (~2000 cells), but simulation
+>    particle count matters more (~1000–4000 for convergence)
+> 5. σ cannot be learned jointly with Φ without additional constraints
 
 **Step 5b — Synthetic benchmark: binary choice + proliferation**
 
