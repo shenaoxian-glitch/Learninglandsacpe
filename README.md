@@ -358,6 +358,7 @@ toymodel/
     ├── sweep_seeds/                   #   Optimization variance (10 seeds)
     ├── learn_sigma/                   #   Learnable σ (with/without confinement)
     ├── sweep_ntarget/                 #   N_target sweep (2000–12000)
+    ├── data_driven_confinement/       #   Data-driven anisotropic confinement (C_x, C_y from data)
     └── summary_*.png, analysis_*.png  #   Per-sweep results
 ```
 
@@ -392,6 +393,7 @@ toymodel/
 | Full NN source+death | ✅ Done | `05_*/train_sd_nn_multi.py` — reduced Φ(16,16) + y-only γ(8,8), symmetric potential recovered |
 | Asymmetric potential (fixed death) | ✅ Done | `03.1_*/train_asym_potential_multi.py` — 5-param potential + 2D death, confirms a-c degeneracy is fundamental |
 | NN asymmetric + systematic sweeps | ✅ Done | `05.1_*/` — N_learned, N_target, seed, σ sweeps; distribution diagnostics; N_target≥2000 sufficient |
+| Data-driven confinement | ✅ Done | `05.1_*/data_driven_confinement/` — anisotropic C_x, C_y from data+death rate, replaces true quartic coefficients |
 | Regional mass matching | ⚠️ Ineffective | data sparsity in y>2 prevents y_c/k degeneracy breaking |
 | Spectral normalization | 🔲 Planned | Lipschitz constraint on NN weights |
 | Weight decay tuning | 🔲 Planned | Stronger L2 to bias toward smooth mappings |
@@ -1311,6 +1313,66 @@ characteristics (not the unobservable potential) between target and learned mode
 > 4. Training data requirements are modest (~2000 cells), but simulation
 >    particle count matters more (~1000–4000 for convergence)
 > 5. σ cannot be learned jointly with Φ without additional constraints
+
+**Step 5.1-conf — Data-driven anisotropic confinement**
+
+When applying the NN potential to real data, the true quartic coefficients
+(exp(b), exp(d)) used for confinement are unknown. This step derives
+anisotropic confinement coefficients C_x, C_y directly from target particle
+data and the known death rate, eliminating the need for ground-truth potential
+parameters.
+
+> **Implementation notes (2026-05-15):**
+>
+> Created `05.1_asymmetric_nn/data_driven_confinement/` with two scripts:
+> `train_data_conf.py` (confinement computation + training) and
+> `plot_analysis.py` (distribution diagnostics).
+>
+> **Joint Energy-Survival Horizon method (5 steps):**
+>
+> 1. **Empirical horizon R99_i**: 99th percentile of |z_i| along each axis
+>    from target data (where 99% of observed mass lives).
+>
+> 2. **Survival horizon R_γ_i**: find the radius along each axis where
+>    the death rate γ exceeds a threshold γ_thr=5.0 (particle survival
+>    <1% over 1 time unit: exp(-5)≈0.007). Evaluated at well x-locations
+>    (x≈±2) where mass concentrates, not at x=0.
+>
+> 3. **Joint boundary R_joint_i = max(R99_i, R_γ_i)**: the confinement
+>    wall must enclose both the observed particle cloud and the survival
+>    horizon.
+>
+> 4. **Safety margin R_bnd_i = 1.2 × R_joint_i**: 20% buffer for
+>    Brownian excursions during training.
+>
+> 5. **Energy matching**: set C_i = E_target / R_bnd_i⁴, where
+>    E_target = 10σ² = 22.5 (Boltzmann suppression exp(-20)≈2e-9 at
+>    the boundary — strong safety net for numerical stability without
+>    biasing the learned landscape).
+>
+> **Results:**
+>
+> | Coefficient | Data-driven | True (exp(b), exp(d)) | Ratio |
+> |-------------|-------------|----------------------|-------|
+> | C_x | 0.0777 | 0.2019 | 0.385 |
+> | C_y | 0.1061 | 0.3012 | 0.352 |
+>
+> The data-driven coefficients are ~35-39% of the true quartic coefficients.
+> This is expected: the confinement only needs to prevent particle escape,
+> not replicate the true potential's strength in the interior.
+>
+> **Training with data-driven confinement (N=2000, 800 epochs):**
+>
+> - Best loss: 0.0076 (epoch 744), comparable to true-confinement results
+> - No numerical instability — the weaker confinement wall is sufficient
+> - Zone fractions: death_zone ±0.001, right_well ±0.013, left_well ±0.041,
+>   saddle ±0.054 (depleted, consistent with barrier overestimation)
+> - Mass curves and decay curves match well between target and learned model
+>
+> **Conclusion:** The Joint Energy-Survival Horizon method successfully
+> replaces knowledge of true potential parameters with data-derived
+> quantities. This is a prerequisite for applying the framework to real
+> single-cell data where the ground-truth potential is unknown.
 
 **Step 5b — Synthetic benchmark: binary choice + proliferation**
 

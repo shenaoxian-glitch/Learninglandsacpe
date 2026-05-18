@@ -1,0 +1,55 @@
+=================================================================
+Data-driven anisotropic confinement: NN Phi + C_x*x^4 + C_y*y^4
+=================================================================
+
+Loaded target data: /Users/leo/Desktop/learning_lanscapes/toymodel/05.1_asymmetric_nn/data_driven_confinement/../sweep_nparticles_v3/analysis_data.npz
+  N = 2000, shape = (2000, 2)
+
+Confinement computation:
+  R_99:    x=3.438, y=2.692
+  R_gamma: y=3.180 (gamma_thresh=5.0)
+  R_joint: x=3.438, y=3.180
+  R_bnd:   x=4.126, y=3.816
+  C_x = 0.077654  (true exp(b) = 0.201897, ratio=0.385)
+  C_y = 0.106061  (true exp(d) = 0.301194, ratio=0.352)
+  Target mass = 836.29, ~2000 alive
+
+Generating ground-truth full trajectory for visualization ...
+  Training queue: 2000 particles
+
+Model: Phi_nn(2->16->16->1) + 0.0777*x^4 + 0.1061*y^4
+  Learnable params: 337
+  Death rate: fixed 2D analytical
+
+Training for 800 epochs ...
+-----------------------------------------------------------------
+Epoch    0: Loss=0.86726 (MMD=0.41863, Mass=0.08973)
+Epoch   50: Loss=0.34851 (MMD=0.34194, Mass=0.00131)
+Epoch  100: Loss=0.29547 (MMD=0.29541, Mass=0.00001)
+Epoch  150: Loss=0.13467 (MMD=0.13447, Mass=0.00004)
+Epoch  200: Loss=0.09851 (MMD=0.09842, Mass=0.00002)
+Epoch  250: Loss=0.08528 (MMD=0.08507, Mass=0.00004)
+Epoch  300: Loss=0.07855 (MMD=0.07830, Mass=0.00005)
+Epoch  350: Loss=0.08015 (MMD=0.07639, Mass=0.00075)
+Epoch  400: Loss=0.06678 (MMD=0.06560, Mass=0.00024)
+Epoch  450: Loss=0.05318 (MMD=0.05295, Mass=0.00005)
+Epoch  500: Loss=0.03093 (MMD=0.03091, Mass=0.00000)
+Epoch  550: Loss=0.01702 (MMD=0.01684, Mass=0.00004)
+Epoch  600: Loss=0.01538 (MMD=0.01218, Mass=0.00064)
+Epoch  650: Loss=0.00963 (MMD=0.00952, Mass=0.00002)
+Epoch  700: Loss=0.01054 (MMD=0.00958, Mass=0.00019)
+Epoch  750: Loss=0.01053 (MMD=0.00990, Mass=0.00013)
+
+Restored best model from epoch 744 (loss=0.007600)
+Model saved to /Users/leo/Desktop/learning_lanscapes/toymodel/05.1_asymmetric_nn/data_driven_confinement/trained_model_data_conf.eqx
+Results saved to /Users/leo/Desktop/learning_lanscapes/toymodel/05.1_asymmetric_nn/data_driven_confinement/results.json
+
+Done. Saved:
+  /Users/leo/Desktop/learning_lanscapes/toymodel/05.1_asymmetric_nn/data_driven_confinement/training.png
+  /Users/leo/Desktop/learning_lanscapes/toymodel/05.1_asymmetric_nn/data_driven_confinement/landscape.png
+  /Users/leo/Desktop/learning_lanscapes/toymodel/05.1_asymmetric_nn/data_driven_confinement/force_field.png
+  /Users/leo/Desktop/learning_lanscapes/toymodel/05.1_asymmetric_nn/data_driven_confinement/snapshots.png
+  /Users/leo/Desktop/learning_lanscapes/toymodel/05.1_asymmetric_nn/data_driven_confinement/confinement_comparison.png
+  /Users/leo/Desktop/learning_lanscapes/toymodel/05.1_asymmetric_nn/data_driven_confinement/results.json
+  /Users/leo/Desktop/learning_lanscapes/toymodel/05.1_asymmetric_nn/data_driven_confinement/plot_data.npz
+  /Users/leo/Desktop/learning_lanscapes/toymodel/05.1_asymmetric_nn/data_driven_confinement/trained_model_data_conf.eqx
