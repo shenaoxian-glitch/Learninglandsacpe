@@ -351,15 +351,30 @@ toymodel/
 │   ├── training/, simulator/, analysis/
 │   └── *.png, *.eqx                   #   Results and trained model
 │
-└── 05.1_asymmetric_nn/               # NN Φ + fixed 2D death, systematic sweeps
-    ├── train_sd_nn_asym_multi.py      #   Main training script (NN + confinement + 2D death)
-    ├── models/, training/, simulator/  #   Shared modules
-    ├── sweep_nparticles_v3/           #   N_learned sweep (200–6000), distribution analysis
-    ├── sweep_seeds/                   #   Optimization variance (10 seeds)
-    ├── learn_sigma/                   #   Learnable σ (with/without confinement)
-    ├── sweep_ntarget/                 #   N_target sweep (2000–12000)
-    ├── data_driven_confinement/       #   Data-driven anisotropic confinement (C_x, C_y from data)
-    └── summary_*.png, analysis_*.png  #   Per-sweep results
+├── 05.1_asymmetric_nn/               # NN Φ + fixed 2D death, systematic sweeps
+│   ├── train_sd_nn_asym_multi.py      #   Main training script (NN + confinement + 2D death)
+│   ├── models/, training/, simulator/  #   Shared modules
+│   ├── sweep_nparticles_v3/           #   N_learned sweep (200–6000), distribution analysis
+│   ├── sweep_seeds/                   #   Optimization variance (10 seeds)
+│   ├── learn_sigma/                   #   Learnable σ (with/without confinement)
+│   ├── sweep_ntarget/                 #   N_target sweep (2000–12000)
+│   ├── data_driven_confinement/       #   Data-driven anisotropic confinement (C_x, C_y from data)
+│   ├── sweep_nparticles_fixed_N_target_8000_t10_ep2000/  # N_learned sweep (200–6000), T=10, 2000 epochs
+│   ├── sweep_ntarget_fixed_N_learned_3000_t10_ep2000/    # N_target sweep (3000–15000), N_learned=3000
+│   └── summary_*.png, analysis_*.png  #   Per-sweep results
+│
+├── 06_learnable_source/              # Learnable source position (mu_x, mu_y)
+│   ├── train_learnable_source.py      #   Joint mu_x+mu_y learning, N=6000, T=6
+│   ├── resume_training.py             #   Checkpoint-based training resumption
+│   └── models/, training/, simulator/ #   Shared modules
+│
+└── 06.1_learnable_source/            # Learnable mu_x + NN Φ: degeneracy study
+    ├── train_learnable_source_mux.py  #   mu_x only (mu_y fixed), N=3000, T=10
+    ├── analyze_distributions.py       #   Distribution diagnostics (7 plots)
+    ├── models/, training/, simulator/ #   Shared modules
+    ├── init_mux_0.5/                  #   Init mu_x=+0.5 → converges to -0.14
+    ├── init_mux_neg0.5/               #   Init mu_x=-0.5 → converges to -0.22
+    └── init_mux_0.0/                  #   Init mu_x=0.0 (true) → drifts to -0.68
 ```
 
 **Shared modules** (copied into each subfolder that needs them):
@@ -394,6 +409,9 @@ toymodel/
 | Asymmetric potential (fixed death) | ✅ Done | `03.1_*/train_asym_potential_multi.py` — 5-param potential + 2D death, confirms a-c degeneracy is fundamental |
 | NN asymmetric + systematic sweeps | ✅ Done | `05.1_*/` — N_learned, N_target, seed, σ sweeps; distribution diagnostics; N_target≥2000 sufficient |
 | Data-driven confinement | ✅ Done | `05.1_*/data_driven_confinement/` — anisotropic C_x, C_y from data+death rate, replaces true quartic coefficients |
+| Learnable source position | ✅ Done | `06_*/` — mu_x recoverable (error 0.06); joint mu_x+mu_y has slow mu_y convergence due to potential-source degeneracy |
+| Source-potential degeneracy study | ✅ Done | `06.1_*/` — mu_x/Φ degeneracy: true init (mu_x=0) drifts to -0.68; all inits converge to mu_x<0. Unstable equilibrium at ground truth |
+| N_learned/N_target sweeps (T=10) | ✅ Done | `05.1_*/sweep_nparticles_fixed_*`, `sweep_ntarget_fixed_*` — N_learned=3000 sufficient; N_target saturates at ~4500 |
 | Regional mass matching | ⚠️ Ineffective | data sparsity in y>2 prevents y_c/k degeneracy breaking |
 | Spectral normalization | 🔲 Planned | Lipschitz constraint on NN weights |
 | Weight decay tuning | 🔲 Planned | Stronger L2 to bias toward smooth mappings |
@@ -1373,6 +1391,137 @@ parameters.
 > replaces knowledge of true potential parameters with data-derived
 > quantities. This is a prerequisite for applying the framework to real
 > single-cell data where the ground-truth potential is unknown.
+
+**Step 6 — Learnable source position (mu_x, mu_y)**
+
+Learn the particle source position jointly with the NN potential. Source
+distribution uses a reparameterization trick: `z_init = mu + eps * sigma`
+where `eps ~ N(0,1)` is sampled once and reused every epoch, making mu
+differentiable through the SDE simulation.
+
+Model: NN Φ (2→16→16→1, frozen quartic confinement) + fixed 2D analytical
+death rate + learnable source center (mu_x, mu_y). N=6000 particles,
+T_final=6.0, dt=0.01, sigma=2.5. Separate optimizers: AdamW(lr=3e-3) for
+NN, Adam(lr=2e-2) for source params.
+
+> **Implementation notes (2026-05-18):**
+>
+> Created `06_learnable_source/` with `train_learnable_source.py` and
+> `resume_training.py` (checkpoint-based resumption). Training ran on
+> GPU (NVIDIA L40S) via SSH.
+>
+> **Experiment 1 — mu_x only (mu_y fixed):**
+> N=4000, 4000 epochs. Init mu_x=1.0, true mu_x=0.0.
+> Result: mu_x converged to -0.056, **error=0.056**. Clean recovery.
+>
+> **Experiment 2 — mu_x + mu_y jointly:**
+> N=4000, 4000 epochs. Init mu_x=1.0, mu_y=0.0. True: (0.0, -1.0).
+> Result: mu_x error=0.176, **mu_y error=1.127**. mu_y barely moved from
+> its initial value. The single-snapshot signal about y-origin is washed
+> out by the strong potential y-gradient and diffusion by t=6.0.
+>
+> **Experiment 3 — closer init + more particles:**
+> N=6000, init mu=(-0.5, -1.5). Full 4000 epochs (no early stopping).
+> Result: mu_x error=0.224, mu_y error=0.228. Closer init helps mu_y.
+>
+> **Experiment 4 — extended training (9000 epochs via checkpointing):**
+> Same setup, resumed to 9000 total epochs.
+> Result: mu_x error=0.212, **mu_y error=0.049**. mu_y eventually
+> converges but requires ~14x more epochs than mu_x — the gradient
+> signal dL/d(mu_y) is genuinely weak because the particle distribution
+> at t=6.0 is dominated by the potential landscape, not the source
+> y-position.
+>
+> **Experiment 5 — freeze NN, train only source:**
+> Froze NN weights from epoch 4000 and epoch 7000 checkpoints, trained
+> only mu_x/mu_y with lr=0.05 for 1000 epochs each.
+> Result: mu params oscillated without converging in both cases. The NN
+> has already compensated for the source offset, so the frozen-NN loss
+> surface is flat in the source-position directions.
+>
+> **Key findings:**
+>
+> 1. **mu_x is identifiable** from a single late snapshot — the asymmetric
+>    potential (e·x tilt) preserves lateral source information. Error ~0.05
+>    when learned alone.
+>
+> 2. **Joint mu_x + mu_y learning is hard.** mu_y convergence is ~14x
+>    slower than mu_x. The strong y-gradient in the potential erases
+>    memory of where particles started in y. With enough epochs (~9000),
+>    mu_y does converge (error 0.04), but this is impractical.
+>
+> 3. **Potential-source degeneracy:** The NN potential co-adapts with the
+>    source position — a wrong mu can be partially compensated by shifting
+>    the learned landscape. This makes freezing the NN ineffective unless
+>    the NN is already very close to the ground truth.
+>
+> 4. **Multi-timepoint matching** (matching early snapshots where particles
+>    are still near the source) is the natural next step to make mu_y
+>    identifiable in fewer epochs.
+
+**Step 6.1 — Source-potential degeneracy: mu_x initialization study**
+
+The source position mu_x and potential Φ can co-adapt: a shifted source can be
+compensated by reshaping the potential, producing equally good fits with
+incorrect parameters. This step systematically characterizes the degeneracy
+by training from three different mu_x initializations.
+
+Setup: NN Φ (2→16→16→1, frozen quartic confinement) + fixed 2D analytical
+death rate + learnable mu_x (mu_y fixed at true -1.0). N_learned=3000,
+N_target=8000, T=10.0, 2000 epochs. AdamW(lr=3e-3) for NN, Adam(lr=2e-2)
+for mu_x.
+
+> **Implementation notes (2026-05-19):**
+>
+> Created `06.1_learnable_source/` with `train_learnable_source_mux.py` and
+> `analyze_distributions.py`. Trained on GPU (NVIDIA RTX 5000 Ada). Each
+> initialization saves to its own subfolder with full training plots,
+> distribution analysis (7 diagnostic plots), and trained models.
+>
+> **Results — three initializations:**
+>
+> | Init mu_x | Final mu_x | Error | Best loss | Bifurcation | x-marg RMSE | Counterfactual bifurc |
+> |-----------|-----------|-------|-----------|-------------|-------------|----------------------|
+> | +0.5 | -0.140 | 0.140 | 0.0015 | 62.1%L | 0.045 | 51.9%L |
+> | -0.5 | -0.216 | 0.216 | 0.0015 | 61.1%L | 0.048 | 48.3%L |
+> | **0.0 (true)** | **-0.680** | **0.680** | **0.0095** | 60.3%L | 0.068 | **19.1%L** |
+>
+> **Counterfactual test:** plugging the true source (mu_x=0) into the learned
+> potential reveals how severely Φ has been warped to compensate for the wrong
+> source position. Bifurcation drops from 62%L (target) to 19%L (init=0.0
+> potential + true source), showing extreme right-well dominance.
+>
+> **Key findings:**
+>
+> 1. **Starting at the true value is the worst outcome.** mu_x=0 drifts to
+>    -0.68 (5× worse than init=+0.5). The loss is 6× higher. The training
+>    curve shows mu_x plunging to -2.5 around epoch 500 before partially
+>    recovering — the optimizer actively escapes from the truth.
+>
+> 2. **All initializations converge to mu_x < 0.** The degeneracy is not
+>    multi-modal (no positive solutions); it is a continuous valley in the
+>    negative-mu_x direction where the potential compensates by shifting the
+>    effective asymmetry.
+>
+> 3. **The true (mu_x=0, Φ_true) is an unstable equilibrium** in the joint
+>    parameter space. The gradient at the true solution points away from it —
+>    this is not a flat direction but a saddle point. The optimizer escapes
+>    because small perturbations from noise create a gradient toward negative
+>    mu_x that the potential can cheaply compensate.
+>
+> 4. **Paradoxically, init=+0.5 (wrong side) gives the best result** because
+>    it constrains co-adaptation: the optimizer crosses through the true
+>    solution's neighborhood and settles in a shallow basin nearby.
+>
+> 5. **Distribution match quality is robust despite parameter error:** all
+>    three models achieve 60-62%L bifurcation (target 62.4%L), confirming
+>    the degeneracy manifold connects many equally valid (mu_x, Φ) pairs
+>    in terms of observable distributions.
+>
+> **Implications:** Breaking the mu_x/Φ degeneracy requires either:
+> (a) regularization on Φ (smoothness, spectral norm) to make compensation costly,
+> (b) multi-timepoint matching to exploit different transient sensitivities, or
+> (c) architectural constraints that decouple source position from potential shape.
 
 **Step 5b — Synthetic benchmark: binary choice + proliferation**
 

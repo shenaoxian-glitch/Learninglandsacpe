@@ -1,0 +1,400 @@
+E0519 14:16:24.360817 1084270 slow_operation_alarm.cc:73] 
+********************************
+[Compiling module input_reduce_fusion.10 for GPU] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+********************************
+E0519 14:17:26.883116 1084258 slow_operation_alarm.cc:140] The operation took 3m2.522369597s
+
+********************************
+[Compiling module input_reduce_fusion.10 for GPU] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+********************************
+=================================================================
+Target particle count sweep (T=10, ep=2000)
+=================================================================
+  seed_learned = 99, N_learned = 3000
+  N_target     = [3000, 4500, 6000, 7500, 9000, 10500, 12000, 13500, 15000]
+  target_seeds = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+  sigma        = 1.5 (fixed)
+  T_final      = 10.0
+  epochs=2000, patience=800, lam_mass=5.0
+  Total runs: 9
+=================================================================
+
+  True CP: left=(-2.836,2.124), right=(2.702,2.077), barrier=11.660
+
+Preparing analysis batch (seed=777, N=2000) ...
+  Simulating analysis batch through true dynamics ...
+  Target: frac_left=0.615, final_mass=547.6
+  Target zones: {'left_well': 0.5283538699150085, 'saddle': 0.15216268599033356, 'right_well': 0.31948336958885193, 'source': 0.10287302732467651, 'death_zone': 0.22495311498641968}
+
+==================================================
+  N_target = 3000, seed_target = 1
+==================================================
+  Generating target (seed=1, N=3000) ...
+  Target mass=821.2
+
+  N_target=3000
+    tgt_mass=821.2 (N=3000) -> scaled=821.2 (N=3000)
+    Epoch    0: Loss=0.97491 (MMD=0.55716, Mass=0.08355)
+    Epoch  100: Loss=0.49250 (MMD=0.48964, Mass=0.00057)
+    Epoch  200: Loss=0.33778 (MMD=0.33254, Mass=0.00105)
+    Epoch  300: Loss=0.05919 (MMD=0.05543, Mass=0.00075)
+    Epoch  400: Loss=0.03613 (MMD=0.03605, Mass=0.00002)
+    Epoch  500: Loss=0.02609 (MMD=0.02609, Mass=0.00000)
+    Epoch  600: Loss=0.02293 (MMD=0.02275, Mass=0.00003)
+    Epoch  700: Loss=0.02225 (MMD=0.02220, Mass=0.00001)
+    Epoch  800: Loss=0.01981 (MMD=0.01979, Mass=0.00000)
+    Epoch  900: Loss=0.02090 (MMD=0.02026, Mass=0.00013)
+    Epoch 1000: Loss=0.01847 (MMD=0.01833, Mass=0.00003)
+    Epoch 1100: Loss=0.01627 (MMD=0.01620, Mass=0.00002)
+    Epoch 1200: Loss=0.01290 (MMD=0.01290, Mass=0.00000)
+    Epoch 1300: Loss=0.01067 (MMD=0.01051, Mass=0.00003)
+    Epoch 1400: Loss=0.00986 (MMD=0.00980, Mass=0.00001)
+    Epoch 1500: Loss=0.01049 (MMD=0.00951, Mass=0.00019)
+    Epoch 1600: Loss=0.01203 (MMD=0.00908, Mass=0.00059)
+    Epoch 1700: Loss=0.00713 (MMD=0.00712, Mass=0.00000)
+    Epoch 1800: Loss=0.00845 (MMD=0.00726, Mass=0.00024)
+    Epoch 1900: Loss=0.00651 (MMD=0.00647, Mass=0.00001)
+    Best epoch 1974, loss=0.004585
+    Saved model to /home/lia/toymodel/05.1_asymmetric_nn/sweep_ntarget_fixed_N_learned_3000_t10_ep2000/Ntgt3000/trained_model.eqx
+    CP: (-2.774,2.131), (2.648,2.150), barrier=14.337
+    Analyzing (N_analysis=2000) ...
+    Bifurcation: 0.582L / 0.418R (target: 0.615/0.385)
+    Final mass: 544.7 (target: 547.6)
+    Zones: {'left_well': 0.5126590132713318, 'saddle': 0.1333324909210205, 'right_well': 0.35400858521461487, 'source': 0.13472847640514374, 'death_zone': 0.25669407844543457}
+
+==================================================
+  N_target = 4500, seed_target = 2
+==================================================
+  Generating target (seed=2, N=4500) ...
+  Target mass=1226.4
+
+  N_target=4500
+    tgt_mass=1226.4 (N=4500) -> scaled=817.6 (N=3000)
+    Epoch    0: Loss=1.00183 (MMD=0.56757, Mass=0.08685)
+    Epoch  100: Loss=0.49041 (MMD=0.48826, Mass=0.00043)
+    Epoch  200: Loss=0.33837 (MMD=0.33302, Mass=0.00107)
+    Epoch  300: Loss=0.07005 (MMD=0.06964, Mass=0.00008)
+    Epoch  400: Loss=0.04940 (MMD=0.04936, Mass=0.00001)
+    Epoch  500: Loss=0.03519 (MMD=0.03509, Mass=0.00002)
+    Epoch  600: Loss=0.02585 (MMD=0.02585, Mass=0.00000)
+    Epoch  700: Loss=0.02179 (MMD=0.02162, Mass=0.00003)
+    Epoch  800: Loss=0.01766 (MMD=0.01760, Mass=0.00001)
+    Epoch  900: Loss=0.01581 (MMD=0.01575, Mass=0.00001)
+    Epoch 1000: Loss=0.01014 (MMD=0.01014, Mass=0.00000)
+    Epoch 1100: Loss=0.00970 (MMD=0.00964, Mass=0.00001)
+    Epoch 1200: Loss=0.00941 (MMD=0.00937, Mass=0.00001)
+    Epoch 1300: Loss=0.00782 (MMD=0.00779, Mass=0.00001)
+    Epoch 1400: Loss=0.00690 (MMD=0.00687, Mass=0.00000)
+    Epoch 1500: Loss=0.00543 (MMD=0.00519, Mass=0.00005)
+    Epoch 1600: Loss=0.00879 (MMD=0.00500, Mass=0.00076)
+    Epoch 1700: Loss=0.00468 (MMD=0.00459, Mass=0.00002)
+    Epoch 1800: Loss=0.00520 (MMD=0.00409, Mass=0.00022)
+    Epoch 1900: Loss=0.00274 (MMD=0.00273, Mass=0.00000)
+    Best epoch 1959, loss=0.001999
+    Saved model to /home/lia/toymodel/05.1_asymmetric_nn/sweep_ntarget_fixed_N_learned_3000_t10_ep2000/Ntgt4500/trained_model.eqx
+    CP: (-2.822,2.140), (2.637,2.095), barrier=9.954
+    Analyzing (N_analysis=2000) ...
+    Bifurcation: 0.633L / 0.367R (target: 0.615/0.385)
+    Final mass: 545.4 (target: 547.6)
+    Zones: {'left_well': 0.5512781739234924, 'saddle': 0.14555034041404724, 'right_well': 0.3031715154647827, 'source': 0.1207055151462555, 'death_zone': 0.24804838001728058}
+
+==================================================
+  N_target = 6000, seed_target = 3
+==================================================
+  Generating target (seed=3, N=6000) ...
+  Target mass=1647.6
+
+  N_target=6000
+    tgt_mass=1647.6 (N=6000) -> scaled=823.8 (N=3000)
+    Epoch    0: Loss=0.98133 (MMD=0.57558, Mass=0.08115)
+    Epoch  100: Loss=0.50183 (MMD=0.49924, Mass=0.00052)
+    Epoch  200: Loss=0.32239 (MMD=0.31863, Mass=0.00075)
+    Epoch  300: Loss=0.05853 (MMD=0.05465, Mass=0.00078)
+    Epoch  400: Loss=0.03680 (MMD=0.03678, Mass=0.00001)
+    Epoch  500: Loss=0.02790 (MMD=0.02774, Mass=0.00003)
+    Epoch  600: Loss=0.02399 (MMD=0.02395, Mass=0.00001)
+    Epoch  700: Loss=0.02050 (MMD=0.02038, Mass=0.00002)
+    Epoch  800: Loss=0.01787 (MMD=0.01775, Mass=0.00002)
+    Epoch  900: Loss=0.01763 (MMD=0.01739, Mass=0.00005)
+    Epoch 1000: Loss=0.01433 (MMD=0.01431, Mass=0.00000)
+    Epoch 1100: Loss=0.01434 (MMD=0.01422, Mass=0.00002)
+    Epoch 1200: Loss=0.01037 (MMD=0.01035, Mass=0.00000)
+    Epoch 1300: Loss=0.01010 (MMD=0.01009, Mass=0.00000)
+    Epoch 1400: Loss=0.00932 (MMD=0.00929, Mass=0.00000)
+    Epoch 1500: Loss=0.01153 (MMD=0.00987, Mass=0.00033)
+    Epoch 1600: Loss=0.01048 (MMD=0.00813, Mass=0.00047)
+    Epoch 1700: Loss=0.00651 (MMD=0.00622, Mass=0.00006)
+    Epoch 1800: Loss=0.00754 (MMD=0.00631, Mass=0.00025)
+    Epoch 1900: Loss=0.00478 (MMD=0.00478, Mass=0.00000)
+    Best epoch 1993, loss=0.003721
+    Saved model to /home/lia/toymodel/05.1_asymmetric_nn/sweep_ntarget_fixed_N_learned_3000_t10_ep2000/Ntgt6000/trained_model.eqx
+    CP: (-2.802,2.140), (2.586,2.114), barrier=10.361
+    Analyzing (N_analysis=2000) ...
+    Bifurcation: 0.617L / 0.383R (target: 0.615/0.385)
+    Final mass: 546.2 (target: 547.6)
+    Zones: {'left_well': 0.5589061379432678, 'saddle': 0.11864756047725677, 'right_well': 0.32244622707366943, 'source': 0.12407573312520981, 'death_zone': 0.2553233504295349}
+
+==================================================
+  N_target = 7500, seed_target = 4
+==================================================
+  Generating target (seed=4, N=7500) ...
+  Target mass=2056.6
+
+  N_target=7500
+    tgt_mass=2056.6 (N=7500) -> scaled=822.6 (N=3000)
+    Epoch    0: Loss=0.98041 (MMD=0.56929, Mass=0.08222)
+    Epoch  100: Loss=0.50158 (MMD=0.49882, Mass=0.00055)
+    Epoch  200: Loss=0.32949 (MMD=0.32515, Mass=0.00087)
+    Epoch  300: Loss=0.05842 (MMD=0.05839, Mass=0.00001)
+    Epoch  400: Loss=0.03910 (MMD=0.03896, Mass=0.00003)
+    Epoch  500: Loss=0.02915 (MMD=0.02847, Mass=0.00014)
+    Epoch  600: Loss=0.02330 (MMD=0.02316, Mass=0.00003)
+    Epoch  700: Loss=0.02127 (MMD=0.02117, Mass=0.00002)
+    Epoch  800: Loss=0.01900 (MMD=0.01900, Mass=0.00000)
+    Epoch  900: Loss=0.02025 (MMD=0.01969, Mass=0.00011)
+    Epoch 1000: Loss=0.01772 (MMD=0.01766, Mass=0.00001)
+    Epoch 1100: Loss=0.01665 (MMD=0.01663, Mass=0.00000)
+    Epoch 1200: Loss=0.01388 (MMD=0.01388, Mass=0.00000)
+    Epoch 1300: Loss=0.01085 (MMD=0.01085, Mass=0.00000)
+    Epoch 1400: Loss=0.01023 (MMD=0.01023, Mass=0.00000)
+    Epoch 1500: Loss=0.01049 (MMD=0.00972, Mass=0.00015)
+    Epoch 1600: Loss=0.01166 (MMD=0.00959, Mass=0.00041)
+    Epoch 1700: Loss=0.00751 (MMD=0.00749, Mass=0.00000)
+    Epoch 1800: Loss=0.00820 (MMD=0.00781, Mass=0.00008)
+    Epoch 1900: Loss=0.00672 (MMD=0.00595, Mass=0.00015)
+    Best epoch 1993, loss=0.004525
+    Saved model to /home/lia/toymodel/05.1_asymmetric_nn/sweep_ntarget_fixed_N_learned_3000_t10_ep2000/Ntgt7500/trained_model.eqx
+    CP: (-2.763,2.132), (2.584,2.117), barrier=11.697
+    Analyzing (N_analysis=2000) ...
+    Bifurcation: 0.608L / 0.392R (target: 0.615/0.385)
+    Final mass: 543.8 (target: 547.6)
+    Zones: {'left_well': 0.5514997839927673, 'saddle': 0.1154780238866806, 'right_well': 0.3330222964286804, 'source': 0.12651412189006805, 'death_zone': 0.255071222782135}
+
+==================================================
+  N_target = 9000, seed_target = 5
+==================================================
+  Generating target (seed=5, N=9000) ...
+  Target mass=2465.0
+
+  N_target=9000
+    tgt_mass=2465.0 (N=9000) -> scaled=821.7 (N=3000)
+    Epoch    0: Loss=0.99146 (MMD=0.57611, Mass=0.08307)
+    Epoch  100: Loss=0.50496 (MMD=0.50237, Mass=0.00052)
+    Epoch  200: Loss=0.34037 (MMD=0.33551, Mass=0.00097)
+    Epoch  300: Loss=0.05485 (MMD=0.05373, Mass=0.00022)
+    Epoch  400: Loss=0.03456 (MMD=0.03426, Mass=0.00006)
+    Epoch  500: Loss=0.02747 (MMD=0.02644, Mass=0.00021)
+    Epoch  600: Loss=0.02167 (MMD=0.02156, Mass=0.00002)
+    Epoch  700: Loss=0.02049 (MMD=0.02042, Mass=0.00001)
+    Epoch  800: Loss=0.01794 (MMD=0.01793, Mass=0.00000)
+    Epoch  900: Loss=0.01801 (MMD=0.01775, Mass=0.00005)
+    Epoch 1000: Loss=0.01570 (MMD=0.01567, Mass=0.00001)
+    Epoch 1100: Loss=0.01484 (MMD=0.01481, Mass=0.00001)
+    Epoch 1200: Loss=0.01077 (MMD=0.01076, Mass=0.00000)
+    Epoch 1300: Loss=0.00900 (MMD=0.00899, Mass=0.00000)
+    Epoch 1400: Loss=0.00822 (MMD=0.00819, Mass=0.00001)
+    Epoch 1500: Loss=0.00854 (MMD=0.00774, Mass=0.00016)
+    Epoch 1600: Loss=0.01011 (MMD=0.00794, Mass=0.00043)
+    Epoch 1700: Loss=0.00600 (MMD=0.00597, Mass=0.00001)
+    Epoch 1800: Loss=0.00809 (MMD=0.00600, Mass=0.00042)
+    Epoch 1900: Loss=0.00531 (MMD=0.00509, Mass=0.00004)
+    Best epoch 1930, loss=0.003627
+    Saved model to /home/lia/toymodel/05.1_asymmetric_nn/sweep_ntarget_fixed_N_learned_3000_t10_ep2000/Ntgt9000/trained_model.eqx
+    CP: (-2.799,2.143), (2.571,2.107), barrier=11.220
+    Analyzing (N_analysis=2000) ...
+    Bifurcation: 0.628L / 0.372R (target: 0.615/0.385)
+    Final mass: 541.9 (target: 547.6)
+    Zones: {'left_well': 0.5670486688613892, 'saddle': 0.12736423313617706, 'right_well': 0.30558720231056213, 'source': 0.131331667304039, 'death_zone': 0.2582285404205322}
+
+==================================================
+  N_target = 10500, seed_target = 6
+==================================================
+  Generating target (seed=6, N=10500) ...
+  Target mass=2873.6
+
+  N_target=10500
+    tgt_mass=2873.6 (N=10500) -> scaled=821.0 (N=3000)
+    Epoch    0: Loss=0.98616 (MMD=0.56780, Mass=0.08367)
+    Epoch  100: Loss=0.49806 (MMD=0.49537, Mass=0.00054)
+    Epoch  200: Loss=0.33451 (MMD=0.32945, Mass=0.00101)
+    Epoch  300: Loss=0.05550 (MMD=0.05548, Mass=0.00000)
+    Epoch  400: Loss=0.03851 (MMD=0.03793, Mass=0.00012)
+    Epoch  500: Loss=0.03070 (MMD=0.03070, Mass=0.00000)
+    Epoch  600: Loss=0.02628 (MMD=0.02625, Mass=0.00000)
+    Epoch  700: Loss=0.02276 (MMD=0.02273, Mass=0.00001)
+    Epoch  800: Loss=0.01950 (MMD=0.01949, Mass=0.00000)
+    Epoch  900: Loss=0.02079 (MMD=0.02059, Mass=0.00004)
+    Epoch 1000: Loss=0.01762 (MMD=0.01759, Mass=0.00001)
+    Epoch 1100: Loss=0.01581 (MMD=0.01581, Mass=0.00000)
+    Epoch 1200: Loss=0.01253 (MMD=0.01238, Mass=0.00003)
+    Epoch 1300: Loss=0.01020 (MMD=0.01016, Mass=0.00001)
+    Epoch 1400: Loss=0.00923 (MMD=0.00922, Mass=0.00000)
+    Epoch 1500: Loss=0.01047 (MMD=0.00984, Mass=0.00013)
+    Epoch 1600: Loss=0.01127 (MMD=0.00895, Mass=0.00046)
+    Epoch 1700: Loss=0.00723 (MMD=0.00721, Mass=0.00000)
+    Epoch 1800: Loss=0.00725 (MMD=0.00705, Mass=0.00004)
+    Epoch 1900: Loss=0.00562 (MMD=0.00515, Mass=0.00009)
+    Best epoch 1960, loss=0.004021
+    Saved model to /home/lia/toymodel/05.1_asymmetric_nn/sweep_ntarget_fixed_N_learned_3000_t10_ep2000/Ntgt10500/trained_model.eqx
+    CP: (-2.772,2.128), (2.598,2.111), barrier=11.578
+    Analyzing (N_analysis=2000) ...
+    Bifurcation: 0.619L / 0.381R (target: 0.615/0.385)
+    Final mass: 546.9 (target: 547.6)
+    Zones: {'left_well': 0.5482645630836487, 'saddle': 0.1343809813261032, 'right_well': 0.31735435128211975, 'source': 0.1321045309305191, 'death_zone': 0.2527572810649872}
+
+==================================================
+  N_target = 12000, seed_target = 7
+==================================================
+  Generating target (seed=7, N=12000) ...
+  Target mass=3275.6
+
+  N_target=12000
+    tgt_mass=3275.6 (N=12000) -> scaled=818.9 (N=3000)
+    Epoch    0: Loss=0.99601 (MMD=0.56800, Mass=0.08560)
+    Epoch  100: Loss=0.50395 (MMD=0.50111, Mass=0.00057)
+    Epoch  200: Loss=0.34010 (MMD=0.33516, Mass=0.00099)
+    Epoch  300: Loss=0.05623 (MMD=0.05010, Mass=0.00123)
+    Epoch  400: Loss=0.03380 (MMD=0.03353, Mass=0.00005)
+    Epoch  500: Loss=0.02353 (MMD=0.02306, Mass=0.00009)
+    Epoch  600: Loss=0.02107 (MMD=0.02078, Mass=0.00006)
+    Epoch  700: Loss=0.01988 (MMD=0.01981, Mass=0.00001)
+    Epoch  800: Loss=0.01784 (MMD=0.01783, Mass=0.00000)
+    Epoch  900: Loss=0.01923 (MMD=0.01861, Mass=0.00013)
+    Epoch 1000: Loss=0.01581 (MMD=0.01570, Mass=0.00002)
+    Epoch 1100: Loss=0.01440 (MMD=0.01439, Mass=0.00000)
+    Epoch 1200: Loss=0.01210 (MMD=0.01208, Mass=0.00000)
+    Epoch 1300: Loss=0.00948 (MMD=0.00928, Mass=0.00004)
+    Epoch 1400: Loss=0.00958 (MMD=0.00947, Mass=0.00002)
+    Epoch 1500: Loss=0.00994 (MMD=0.00846, Mass=0.00029)
+    Epoch 1600: Loss=0.01118 (MMD=0.00831, Mass=0.00057)
+    Epoch 1700: Loss=0.00610 (MMD=0.00605, Mass=0.00001)
+    Epoch 1800: Loss=0.00718 (MMD=0.00617, Mass=0.00020)
+    Epoch 1900: Loss=0.00569 (MMD=0.00520, Mass=0.00010)
+    Best epoch 1908, loss=0.003966
+    Saved model to /home/lia/toymodel/05.1_asymmetric_nn/sweep_ntarget_fixed_N_learned_3000_t10_ep2000/Ntgt12000/trained_model.eqx
+    CP: (-2.751,2.138), (2.615,2.113), barrier=15.108
+    Analyzing (N_analysis=2000) ...
+    Bifurcation: 0.589L / 0.411R (target: 0.615/0.385)
+    Final mass: 548.5 (target: 547.6)
+    Zones: {'left_well': 0.5351639986038208, 'saddle': 0.11792591959238052, 'right_well': 0.3469100594520569, 'source': 0.1290292590856552, 'death_zone': 0.2530348598957062}
+
+==================================================
+  N_target = 13500, seed_target = 8
+==================================================
+  Generating target (seed=8, N=13500) ...
+  Target mass=3677.1
+
+  N_target=13500
+    tgt_mass=3677.1 (N=13500) -> scaled=817.1 (N=3000)
+    Epoch    0: Loss=0.98926 (MMD=0.55299, Mass=0.08725)
+    Epoch  100: Loss=0.48903 (MMD=0.48630, Mass=0.00055)
+    Epoch  200: Loss=0.34183 (MMD=0.33581, Mass=0.00120)
+    Epoch  300: Loss=0.06108 (MMD=0.05680, Mass=0.00086)
+    Epoch  400: Loss=0.03782 (MMD=0.03747, Mass=0.00007)
+    Epoch  500: Loss=0.02812 (MMD=0.02772, Mass=0.00008)
+    Epoch  600: Loss=0.02325 (MMD=0.02315, Mass=0.00002)
+    Epoch  700: Loss=0.02242 (MMD=0.02229, Mass=0.00003)
+    Epoch  800: Loss=0.01970 (MMD=0.01970, Mass=0.00000)
+    Epoch  900: Loss=0.01965 (MMD=0.01919, Mass=0.00009)
+    Epoch 1000: Loss=0.01642 (MMD=0.01626, Mass=0.00003)
+    Epoch 1100: Loss=0.01485 (MMD=0.01474, Mass=0.00002)
+    Epoch 1200: Loss=0.01076 (MMD=0.01073, Mass=0.00001)
+    Epoch 1300: Loss=0.00940 (MMD=0.00940, Mass=0.00000)
+    Epoch 1400: Loss=0.00838 (MMD=0.00836, Mass=0.00000)
+    Epoch 1500: Loss=0.00833 (MMD=0.00802, Mass=0.00006)
+    Epoch 1600: Loss=0.01235 (MMD=0.00840, Mass=0.00079)
+    Epoch 1700: Loss=0.00629 (MMD=0.00616, Mass=0.00003)
+    Epoch 1800: Loss=0.00899 (MMD=0.00647, Mass=0.00050)
+    Epoch 1900: Loss=0.00494 (MMD=0.00487, Mass=0.00001)
+    Best epoch 1929, loss=0.003950
+    Saved model to /home/lia/toymodel/05.1_asymmetric_nn/sweep_ntarget_fixed_N_learned_3000_t10_ep2000/Ntgt13500/trained_model.eqx
+    CP: (-2.758,2.140), (2.643,2.154), barrier=14.083
+    Analyzing (N_analysis=2000) ...
+    Bifurcation: 0.601L / 0.399R (target: 0.615/0.385)
+    Final mass: 537.6 (target: 547.6)
+    Zones: {'left_well': 0.533089280128479, 'saddle': 0.12889716029167175, 'right_well': 0.3380136787891388, 'source': 0.13651233911514282, 'death_zone': 0.26255521178245544}
+
+==================================================
+  N_target = 15000, seed_target = 9
+==================================================
+  Generating target (seed=9, N=15000) ...
+  Target mass=4098.7
+
+  N_target=15000
+    tgt_mass=4098.7 (N=15000) -> scaled=819.7 (N=3000)
+    Epoch    0: Loss=0.99730 (MMD=0.57311, Mass=0.08484)
+    Epoch  100: Loss=0.50702 (MMD=0.50444, Mass=0.00052)
+    Epoch  200: Loss=0.34877 (MMD=0.34351, Mass=0.00105)
+    Epoch  300: Loss=0.05659 (MMD=0.05597, Mass=0.00012)
+    Epoch  400: Loss=0.03997 (MMD=0.03908, Mass=0.00018)
+    Epoch  500: Loss=0.02955 (MMD=0.02917, Mass=0.00008)
+    Epoch  600: Loss=0.02420 (MMD=0.02420, Mass=0.00000)
+    Epoch  700: Loss=0.02102 (MMD=0.02095, Mass=0.00001)
+    Epoch  800: Loss=0.01860 (MMD=0.01860, Mass=0.00000)
+    Epoch  900: Loss=0.01878 (MMD=0.01848, Mass=0.00006)
+    Epoch 1000: Loss=0.01457 (MMD=0.01456, Mass=0.00000)
+    Epoch 1100: Loss=0.01469 (MMD=0.01467, Mass=0.00000)
+    Epoch 1200: Loss=0.00990 (MMD=0.00979, Mass=0.00002)
+    Epoch 1300: Loss=0.01044 (MMD=0.01025, Mass=0.00004)
+    Epoch 1400: Loss=0.00814 (MMD=0.00806, Mass=0.00002)
+    Epoch 1500: Loss=0.00802 (MMD=0.00790, Mass=0.00002)
+    Epoch 1600: Loss=0.01032 (MMD=0.00780, Mass=0.00050)
+    Epoch 1700: Loss=0.00625 (MMD=0.00624, Mass=0.00000)
+    Epoch 1800: Loss=0.00644 (MMD=0.00627, Mass=0.00003)
+    Epoch 1900: Loss=0.00510 (MMD=0.00479, Mass=0.00006)
+    Best epoch 1993, loss=0.003407
+    Saved model to /home/lia/toymodel/05.1_asymmetric_nn/sweep_ntarget_fixed_N_learned_3000_t10_ep2000/Ntgt15000/trained_model.eqx
+    CP: (-2.796,2.135), (2.598,2.105), barrier=12.028
+    Analyzing (N_analysis=2000) ...
+    Bifurcation: 0.627L / 0.373R (target: 0.615/0.385)
+    Final mass: 542.2 (target: 547.6)
+    Zones: {'left_well': 0.5624169111251831, 'saddle': 0.12984226644039154, 'right_well': 0.30774086713790894, 'source': 0.13293933868408203, 'death_zone': 0.2552638351917267}
+
+Saved replot_data.npz, results.json
+Saved summary_loss.png
+Saved summary_critical_points.png
+Saved summary_potential_overlay.png
+Saved summary_force_overlay.png
+Saved analysis_mass_curves.png
+Saved analysis_bifurcation.png
+Saved analysis_marginals_x.png
+Saved analysis_marginals_y.png
+Saved analysis_decay_curves.png
+Saved analysis_trajectories.png
+Saved analysis_zones.png
+Saved analysis_summary.png
+
+==========================================================================================
+Summary: N_learned=3000, seed_learned=99
+  True: left=(-2.836,2.124), right=(2.702,2.077), barrier=11.660
+==========================================================================================
+  Ntgt        Loss   Epoch     Barrier        Left (x,y)       Right (x,y)      Saddle (x,y)
+------------------------------------------------------------------------------------------
+  3000    0.004585    1974     14.3366      (-2.77,2.13)       (2.65,2.15)       (0.06,1.73)
+  4500    0.001999    1959      9.9545      (-2.82,2.14)       (2.64,2.10)       (0.10,1.65)
+  6000    0.003721    1993     10.3606      (-2.80,2.14)       (2.59,2.11)      (-0.10,1.90)
+  7500    0.004525    1993     11.6972      (-2.76,2.13)       (2.58,2.12)      (-0.10,1.90)
+  9000    0.003627    1930     11.2203      (-2.80,2.14)       (2.57,2.11)      (-0.06,1.90)
+ 10500    0.004021    1960     11.5784      (-2.77,2.13)       (2.60,2.11)      (-0.06,1.84)
+ 12000    0.003966    1908     15.1083      (-2.75,2.14)       (2.62,2.11)       (0.10,1.79)
+ 13500    0.003950    1929     14.0831      (-2.76,2.14)       (2.64,2.15)       (0.02,1.73)
+ 15000    0.003407    1993     12.0278      (-2.80,2.14)       (2.60,2.11)      (-0.10,1.90)
+
+================================================================================
+Distribution analysis (N_analysis=2000, seed=777)
+Target: frac_left=0.615, final_mass=547.6
+Target zones: left_well=0.528  saddle=0.152  right_well=0.319  source=0.103  death_zone=0.225
+================================================================================
+  Ntgt   frac_L   frac_R     mass   left_w   saddle  right_w   source    death
+--------------------------------------------------------------------------------
+  3000    0.582    0.418    544.7    0.513    0.133    0.354    0.135    0.257
+  4500    0.633    0.367    545.4    0.551    0.146    0.303    0.121    0.248
+  6000    0.617    0.383    546.2    0.559    0.119    0.322    0.124    0.255
+  7500    0.608    0.392    543.8    0.551    0.115    0.333    0.127    0.255
+  9000    0.628    0.372    541.9    0.567    0.127    0.306    0.131    0.258
+ 10500    0.619    0.381    546.9    0.548    0.134    0.317    0.132    0.253
+ 12000    0.589    0.411    548.5    0.535    0.118    0.347    0.129    0.253
+ 13500    0.601    0.399    537.6    0.533    0.129    0.338    0.137    0.263
+ 15000    0.627    0.373    542.2    0.562    0.130    0.308    0.133    0.255
+
+All outputs saved to /home/lia/toymodel/05.1_asymmetric_nn/sweep_ntarget_fixed_N_learned_3000_t10_ep2000/

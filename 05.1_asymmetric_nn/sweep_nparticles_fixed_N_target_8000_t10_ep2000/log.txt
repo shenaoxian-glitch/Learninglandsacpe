@@ -1,0 +1,276 @@
+=================================================================
+Particle count sweep v3 (proper experimental design)
+=================================================================
+  seed_target  = 1, N_target = 8000
+  seed_learned = 2
+  N_learned    = [200, 400, 600, 1000, 1500, 2000, 3000, 4000, 6000]
+  sigma        = 1.5 (fixed, same for target AND model)
+  epochs=2000, patience=800, lam_mass=5.0
+  Total runs: 9
+=================================================================
+
+Generating ground-truth (seed=1, N=8000) ...
+  Target: mass=2186.0, ~7968 alive
+  True CP: left=(-2.836,2.124), right=(2.702,2.077), barrier=11.660
+
+  N_learned=200
+    tgt_mass=2186.0 (N=8000) -> scaled=54.6 (N=200)
+    Epoch    0: Loss=0.85693 (MMD=0.59870, Mass=0.05165)
+    Epoch  100: Loss=0.47470 (MMD=0.47118, Mass=0.00070)
+    Epoch  200: Loss=0.38228 (MMD=0.37129, Mass=0.00220)
+    Epoch  300: Loss=0.18206 (MMD=0.17844, Mass=0.00072)
+    Epoch  400: Loss=0.13245 (MMD=0.12369, Mass=0.00175)
+    Epoch  500: Loss=0.11575 (MMD=0.11559, Mass=0.00003)
+    Epoch  600: Loss=0.11010 (MMD=0.11010, Mass=0.00000)
+    Epoch  700: Loss=0.10365 (MMD=0.09141, Mass=0.00245)
+    Epoch  800: Loss=0.06933 (MMD=0.06932, Mass=0.00000)
+    Epoch  900: Loss=0.06475 (MMD=0.05817, Mass=0.00131)
+    Epoch 1000: Loss=0.05570 (MMD=0.04668, Mass=0.00180)
+    Epoch 1100: Loss=0.04626 (MMD=0.03937, Mass=0.00138)
+    Epoch 1200: Loss=0.07188 (MMD=0.06737, Mass=0.00090)
+    Epoch 1300: Loss=0.03251 (MMD=0.03209, Mass=0.00008)
+    Epoch 1400: Loss=0.02717 (MMD=0.02624, Mass=0.00019)
+    Epoch 1500: Loss=0.02879 (MMD=0.02279, Mass=0.00120)
+    Epoch 1600: Loss=0.02741 (MMD=0.02654, Mass=0.00017)
+    Epoch 1700: Loss=0.02596 (MMD=0.02255, Mass=0.00068)
+    Epoch 1800: Loss=0.03428 (MMD=0.03291, Mass=0.00027)
+    Epoch 1900: Loss=0.02518 (MMD=0.02515, Mass=0.00001)
+    Best epoch 1977, loss=0.014162
+    Saved model to /home/lia/toymodel/05.1_asymmetric_nn/sweep_nparticles_t10_ep2000/N200/trained_model.eqx
+    CP: (-2.753,2.102), (2.525,2.087), barrier=13.364
+
+  N_learned=400
+    tgt_mass=2186.0 (N=8000) -> scaled=109.3 (N=400)
+    Epoch    0: Loss=0.96026 (MMD=0.57785, Mass=0.07648)
+    Epoch  100: Loss=0.47485 (MMD=0.47160, Mass=0.00065)
+    Epoch  200: Loss=0.37664 (MMD=0.37587, Mass=0.00016)
+    Epoch  300: Loss=0.12928 (MMD=0.12396, Mass=0.00106)
+    Epoch  400: Loss=0.10529 (MMD=0.09969, Mass=0.00112)
+    Epoch  500: Loss=0.06898 (MMD=0.06612, Mass=0.00057)
+    Epoch  600: Loss=0.05208 (MMD=0.04373, Mass=0.00167)
+    Epoch  700: Loss=0.03705 (MMD=0.03624, Mass=0.00016)
+    Epoch  800: Loss=0.04056 (MMD=0.03925, Mass=0.00026)
+    Epoch  900: Loss=0.02923 (MMD=0.02923, Mass=0.00000)
+    Epoch 1000: Loss=0.02063 (MMD=0.02003, Mass=0.00012)
+    Epoch 1100: Loss=0.01444 (MMD=0.01443, Mass=0.00000)
+    Epoch 1200: Loss=0.01838 (MMD=0.01756, Mass=0.00016)
+    Epoch 1300: Loss=0.01675 (MMD=0.01515, Mass=0.00032)
+    Epoch 1400: Loss=0.02200 (MMD=0.02186, Mass=0.00003)
+    Epoch 1500: Loss=0.00885 (MMD=0.00877, Mass=0.00002)
+    Epoch 1600: Loss=0.01157 (MMD=0.01151, Mass=0.00001)
+    Epoch 1700: Loss=0.01319 (MMD=0.01222, Mass=0.00020)
+    Epoch 1800: Loss=0.01441 (MMD=0.01289, Mass=0.00030)
+    Epoch 1900: Loss=0.01151 (MMD=0.01149, Mass=0.00000)
+    Best epoch 1963, loss=0.007404
+    Saved model to /home/lia/toymodel/05.1_asymmetric_nn/sweep_nparticles_t10_ep2000/N400/trained_model.eqx
+    CP: (-2.768,2.098), (2.568,2.124), barrier=13.575
+
+  N_learned=600
+    tgt_mass=2186.0 (N=8000) -> scaled=163.9 (N=600)
+    Epoch    0: Loss=0.94171 (MMD=0.56880, Mass=0.07458)
+    Epoch  100: Loss=0.45812 (MMD=0.45681, Mass=0.00026)
+    Epoch  200: Loss=0.33625 (MMD=0.33448, Mass=0.00035)
+    Epoch  300: Loss=0.13061 (MMD=0.12712, Mass=0.00070)
+    Epoch  400: Loss=0.09826 (MMD=0.09824, Mass=0.00000)
+    Epoch  500: Loss=0.07307 (MMD=0.07075, Mass=0.00046)
+    Epoch  600: Loss=0.05032 (MMD=0.05030, Mass=0.00000)
+    Epoch  700: Loss=0.04507 (MMD=0.04065, Mass=0.00088)
+    Epoch  800: Loss=0.03360 (MMD=0.03357, Mass=0.00001)
+    Epoch  900: Loss=0.02402 (MMD=0.02393, Mass=0.00002)
+    Epoch 1000: Loss=0.01287 (MMD=0.01108, Mass=0.00036)
+    Epoch 1100: Loss=0.01641 (MMD=0.01529, Mass=0.00022)
+    Epoch 1200: Loss=0.01293 (MMD=0.01291, Mass=0.00000)
+    Epoch 1300: Loss=0.00917 (MMD=0.00842, Mass=0.00015)
+    Epoch 1400: Loss=0.01315 (MMD=0.01092, Mass=0.00045)
+    Epoch 1500: Loss=0.01210 (MMD=0.01164, Mass=0.00009)
+    Epoch 1600: Loss=0.00830 (MMD=0.00781, Mass=0.00010)
+    Epoch 1700: Loss=0.01051 (MMD=0.00824, Mass=0.00045)
+    Epoch 1800: Loss=0.00989 (MMD=0.00977, Mass=0.00002)
+    Epoch 1900: Loss=0.00947 (MMD=0.00863, Mass=0.00017)
+    Best epoch 1889, loss=0.005712
+    Saved model to /home/lia/toymodel/05.1_asymmetric_nn/sweep_nparticles_t10_ep2000/N600/trained_model.eqx
+    CP: (-2.795,2.130), (2.558,2.099), barrier=13.274
+
+  N_learned=1000
+    tgt_mass=2186.0 (N=8000) -> scaled=273.2 (N=1000)
+    Epoch    0: Loss=0.96275 (MMD=0.56309, Mass=0.07993)
+    Epoch  100: Loss=0.46754 (MMD=0.46724, Mass=0.00006)
+    Epoch  200: Loss=0.32023 (MMD=0.31818, Mass=0.00041)
+    Epoch  300: Loss=0.11492 (MMD=0.11318, Mass=0.00035)
+    Epoch  400: Loss=0.06275 (MMD=0.05865, Mass=0.00082)
+    Epoch  500: Loss=0.04220 (MMD=0.04208, Mass=0.00002)
+    Epoch  600: Loss=0.03221 (MMD=0.03042, Mass=0.00036)
+    Epoch  700: Loss=0.01966 (MMD=0.01965, Mass=0.00000)
+    Epoch  800: Loss=0.01510 (MMD=0.01415, Mass=0.00019)
+    Epoch  900: Loss=0.01318 (MMD=0.01295, Mass=0.00005)
+    Epoch 1000: Loss=0.01255 (MMD=0.01137, Mass=0.00024)
+    Epoch 1100: Loss=0.01375 (MMD=0.01330, Mass=0.00009)
+    Epoch 1200: Loss=0.01032 (MMD=0.01027, Mass=0.00001)
+    Epoch 1300: Loss=0.01513 (MMD=0.01493, Mass=0.00004)
+    Epoch 1400: Loss=0.00905 (MMD=0.00827, Mass=0.00016)
+    Epoch 1500: Loss=0.00872 (MMD=0.00824, Mass=0.00010)
+    Epoch 1600: Loss=0.00842 (MMD=0.00686, Mass=0.00031)
+    Epoch 1700: Loss=0.00761 (MMD=0.00718, Mass=0.00008)
+    Epoch 1800: Loss=0.00758 (MMD=0.00756, Mass=0.00000)
+    Epoch 1900: Loss=0.00537 (MMD=0.00490, Mass=0.00009)
+    Best epoch 1898, loss=0.004210
+    Saved model to /home/lia/toymodel/05.1_asymmetric_nn/sweep_nparticles_t10_ep2000/N1000/trained_model.eqx
+    CP: (-2.787,2.127), (2.581,2.097), barrier=12.583
+
+  N_learned=1500
+    tgt_mass=2186.0 (N=8000) -> scaled=409.9 (N=1500)
+    Epoch    0: Loss=0.88443 (MMD=0.57520, Mass=0.06185)
+    Epoch  100: Loss=0.45292 (MMD=0.45280, Mass=0.00002)
+    Epoch  200: Loss=0.28810 (MMD=0.28807, Mass=0.00001)
+    Epoch  300: Loss=0.10645 (MMD=0.10336, Mass=0.00062)
+    Epoch  400: Loss=0.07246 (MMD=0.06811, Mass=0.00087)
+    Epoch  500: Loss=0.04291 (MMD=0.04267, Mass=0.00005)
+    Epoch  600: Loss=0.03244 (MMD=0.03227, Mass=0.00003)
+    Epoch  700: Loss=0.01899 (MMD=0.01895, Mass=0.00001)
+    Epoch  800: Loss=0.01404 (MMD=0.01403, Mass=0.00000)
+    Epoch  900: Loss=0.01115 (MMD=0.01055, Mass=0.00012)
+    Epoch 1000: Loss=0.00773 (MMD=0.00773, Mass=0.00000)
+    Epoch 1100: Loss=0.00715 (MMD=0.00714, Mass=0.00000)
+    Epoch 1200: Loss=0.00744 (MMD=0.00736, Mass=0.00001)
+    Epoch 1300: Loss=0.00867 (MMD=0.00863, Mass=0.00001)
+    Epoch 1400: Loss=0.00625 (MMD=0.00625, Mass=0.00000)
+    Epoch 1500: Loss=0.00546 (MMD=0.00543, Mass=0.00001)
+    Epoch 1600: Loss=0.00537 (MMD=0.00461, Mass=0.00015)
+    Epoch 1700: Loss=0.00607 (MMD=0.00491, Mass=0.00023)
+    Epoch 1800: Loss=0.00853 (MMD=0.00805, Mass=0.00010)
+    Epoch 1900: Loss=0.00579 (MMD=0.00482, Mass=0.00020)
+    Best epoch 1982, loss=0.002640
+    Saved model to /home/lia/toymodel/05.1_asymmetric_nn/sweep_nparticles_t10_ep2000/N1500/trained_model.eqx
+    CP: (-2.802,2.133), (2.603,2.069), barrier=11.491
+
+  N_learned=2000
+    tgt_mass=2186.0 (N=8000) -> scaled=546.5 (N=2000)
+    Epoch    0: Loss=0.92800 (MMD=0.57035, Mass=0.07153)
+    Epoch  100: Loss=0.46804 (MMD=0.46623, Mass=0.00036)
+    Epoch  200: Loss=0.28948 (MMD=0.28948, Mass=0.00000)
+    Epoch  300: Loss=0.09341 (MMD=0.09327, Mass=0.00003)
+    Epoch  400: Loss=0.04783 (MMD=0.04687, Mass=0.00019)
+    Epoch  500: Loss=0.03090 (MMD=0.03066, Mass=0.00005)
+    Epoch  600: Loss=0.01543 (MMD=0.01538, Mass=0.00001)
+    Epoch  700: Loss=0.01133 (MMD=0.01129, Mass=0.00001)E0519 12:21:29.682588 1076844 slow_operation_alarm.cc:73] 
+********************************
+[Compiling module input_reduce_fusion.11 for GPU] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+********************************
+E0519 12:21:37.961420 1076788 slow_operation_alarm.cc:140] The operation took 2m8.278948146s
+
+********************************
+[Compiling module input_reduce_fusion.11 for GPU] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+********************************
+
+    Epoch  800: Loss=0.01010 (MMD=0.01000, Mass=0.00002)
+    Epoch  900: Loss=0.00868 (MMD=0.00867, Mass=0.00000)
+    Epoch 1000: Loss=0.00818 (MMD=0.00804, Mass=0.00003)
+    Epoch 1100: Loss=0.00678 (MMD=0.00678, Mass=0.00000)
+    Epoch 1200: Loss=0.01053 (MMD=0.00691, Mass=0.00072)
+    Epoch 1300: Loss=0.00669 (MMD=0.00625, Mass=0.00009)
+    Epoch 1400: Loss=0.00509 (MMD=0.00509, Mass=0.00000)
+    Epoch 1500: Loss=0.00473 (MMD=0.00454, Mass=0.00004)
+    Epoch 1600: Loss=0.00595 (MMD=0.00516, Mass=0.00016)
+    Epoch 1700: Loss=0.00398 (MMD=0.00366, Mass=0.00006)
+    Epoch 1800: Loss=0.00327 (MMD=0.00263, Mass=0.00013)
+    Epoch 1900: Loss=0.00728 (MMD=0.00726, Mass=0.00000)
+    Best epoch 1964, loss=0.001983
+    Saved model to /home/lia/toymodel/05.1_asymmetric_nn/sweep_nparticles_t10_ep2000/N2000/trained_model.eqx
+    CP: (-2.797,2.121), (2.644,2.082), barrier=11.588
+
+  N_learned=3000
+    tgt_mass=2186.0 (N=8000) -> scaled=819.7 (N=3000)
+    Epoch    0: Loss=0.92346 (MMD=0.57008, Mass=0.07068)
+    Epoch  100: Loss=0.44930 (MMD=0.44929, Mass=0.00000)
+    Epoch  200: Loss=0.27820 (MMD=0.27749, Mass=0.00014)
+    Epoch  300: Loss=0.07542 (MMD=0.07529, Mass=0.00003)
+    Epoch  400: Loss=0.03503 (MMD=0.03499, Mass=0.00001)
+    Epoch  500: Loss=0.01960 (MMD=0.01957, Mass=0.00001)
+    Epoch  600: Loss=0.01376 (MMD=0.01349, Mass=0.00005)
+    Epoch  700: Loss=0.01090 (MMD=0.01079, Mass=0.00002)
+    Epoch  800: Loss=0.00723 (MMD=0.00721, Mass=0.00000)
+    Epoch  900: Loss=0.00889 (MMD=0.00857, Mass=0.00006)
+    Epoch 1000: Loss=0.00840 (MMD=0.00827, Mass=0.00003)
+    Epoch 1100: Loss=0.00743 (MMD=0.00711, Mass=0.00006)
+    Epoch 1200: Loss=0.00736 (MMD=0.00662, Mass=0.00015)
+    Epoch 1300: Loss=0.00555 (MMD=0.00554, Mass=0.00000)
+    Epoch 1400: Loss=0.00501 (MMD=0.00428, Mass=0.00015)
+    Epoch 1500: Loss=0.00320 (MMD=0.00308, Mass=0.00002)
+    Epoch 1600: Loss=0.00311 (MMD=0.00280, Mass=0.00006)
+    Epoch 1700: Loss=0.00229 (MMD=0.00229, Mass=0.00000)
+    Epoch 1800: Loss=0.00261 (MMD=0.00259, Mass=0.00000)
+    Epoch 1900: Loss=0.00331 (MMD=0.00211, Mass=0.00024)
+    Best epoch 1968, loss=0.001494
+    Saved model to /home/lia/toymodel/05.1_asymmetric_nn/sweep_nparticles_t10_ep2000/N3000/trained_model.eqx
+    CP: (-2.805,2.127), (2.664,2.074), barrier=11.300
+
+  N_learned=4000
+    tgt_mass=2186.0 (N=8000) -> scaled=1093.0 (N=4000)
+    Epoch    0: Loss=0.91921 (MMD=0.56623, Mass=0.07060)
+    Epoch  100: Loss=0.44750 (MMD=0.44736, Mass=0.00003)
+    Epoch  200: Loss=0.25968 (MMD=0.25967, Mass=0.00000)
+    Epoch  300: Loss=0.05669 (MMD=0.05561, Mass=0.00022)
+    Epoch  400: Loss=0.02913 (MMD=0.02906, Mass=0.00002)
+    Epoch  500: Loss=0.01761 (MMD=0.01757, Mass=0.00001)
+    Epoch  600: Loss=0.01220 (MMD=0.01182, Mass=0.00007)
+    Epoch  700: Loss=0.00907 (MMD=0.00906, Mass=0.00000)
+    Epoch  800: Loss=0.00835 (MMD=0.00834, Mass=0.00000)
+    Epoch  900: Loss=0.01002 (MMD=0.00954, Mass=0.00010)
+    Epoch 1000: Loss=0.00796 (MMD=0.00791, Mass=0.00001)
+    Epoch 1100: Loss=0.00872 (MMD=0.00774, Mass=0.00020)
+    Epoch 1200: Loss=0.00638 (MMD=0.00532, Mass=0.00021)
+    Epoch 1300: Loss=0.00677 (MMD=0.00671, Mass=0.00001)
+    Epoch 1400: Loss=0.00569 (MMD=0.00533, Mass=0.00007)
+    Epoch 1500: Loss=0.00454 (MMD=0.00443, Mass=0.00002)
+    Epoch 1600: Loss=0.00386 (MMD=0.00383, Mass=0.00001)
+    Epoch 1700: Loss=0.00275 (MMD=0.00275, Mass=0.00000)
+    Epoch 1800: Loss=0.00307 (MMD=0.00233, Mass=0.00015)
+    Epoch 1900: Loss=0.00194 (MMD=0.00184, Mass=0.00002)
+    Best epoch 1866, loss=0.001450
+    Saved model to /home/lia/toymodel/05.1_asymmetric_nn/sweep_nparticles_t10_ep2000/N4000/trained_model.eqx
+    CP: (-2.799,2.126), (2.651,2.094), barrier=12.649
+
+  N_learned=6000
+    tgt_mass=2186.0 (N=8000) -> scaled=1639.5 (N=6000)
+    Epoch    0: Loss=0.92260 (MMD=0.56364, Mass=0.07179)
+    Epoch  100: Loss=0.45366 (MMD=0.45365, Mass=0.00000)
+    Epoch  200: Loss=0.25550 (MMD=0.25540, Mass=0.00002)
+    Epoch  300: Loss=0.05465 (MMD=0.05461, Mass=0.00001)
+    Epoch  400: Loss=0.02880 (MMD=0.02827, Mass=0.00010)
+    Epoch  500: Loss=0.01384 (MMD=0.01383, Mass=0.00000)
+    Epoch  600: Loss=0.00988 (MMD=0.00988, Mass=0.00000)
+    Epoch  700: Loss=0.00768 (MMD=0.00767, Mass=0.00000)
+    Epoch  800: Loss=0.00703 (MMD=0.00694, Mass=0.00002)
+    Epoch  900: Loss=0.00813 (MMD=0.00789, Mass=0.00005)
+    Epoch 1000: Loss=0.00644 (MMD=0.00631, Mass=0.00002)
+    Epoch 1100: Loss=0.00568 (MMD=0.00567, Mass=0.00000)
+    Epoch 1200: Loss=0.00508 (MMD=0.00435, Mass=0.00014)
+    Epoch 1300: Loss=0.00352 (MMD=0.00339, Mass=0.00003)
+    Epoch 1400: Loss=0.00302 (MMD=0.00295, Mass=0.00001)
+    Epoch 1500: Loss=0.00245 (MMD=0.00244, Mass=0.00000)
+    Epoch 1600: Loss=0.00144 (MMD=0.00144, Mass=0.00000)
+    Epoch 1700: Loss=0.00164 (MMD=0.00164, Mass=0.00000)
+    Epoch 1800: Loss=0.00142 (MMD=0.00142, Mass=0.00000)
+    Epoch 1900: Loss=0.00159 (MMD=0.00113, Mass=0.00009)
+    Best epoch 1963, loss=0.000965
+    Saved model to /home/lia/toymodel/05.1_asymmetric_nn/sweep_nparticles_t10_ep2000/N6000/trained_model.eqx
+    CP: no saddle found
+
+==========================================================================================
+Summary: N_target=8000, seed_target=1, seed_learned=2
+  True: left=(-2.836,2.124), right=(2.702,2.077), barrier=11.660
+==========================================================================================
+     N        Loss   Epoch     Barrier        Left (x,y)       Right (x,y)      Saddle (x,y)
+------------------------------------------------------------------------------------------
+   200    0.014162    1977     13.3639      (-2.75,2.10)       (2.53,2.09)       (0.02,2.01)
+   400    0.007404    1963     13.5753      (-2.77,2.10)       (2.57,2.12)      (-0.10,2.01)
+   600    0.005712    1889     13.2743      (-2.79,2.13)       (2.56,2.10)      (-0.06,2.01)
+  1000    0.004210    1898     12.5832      (-2.79,2.13)       (2.58,2.10)       (0.06,1.84)
+  1500    0.002640    1982     11.4906      (-2.80,2.13)       (2.60,2.07)       (0.18,1.68)
+  2000    0.001983    1964     11.5881      (-2.80,2.12)       (2.64,2.08)       (0.22,1.57)
+  3000    0.001494    1968     11.2995      (-2.81,2.13)       (2.66,2.07)       (0.26,1.57)
+  4000    0.001450    1866     12.6494      (-2.80,2.13)       (2.65,2.09)       (0.22,1.59)
+  6000    0.000965    1963         N/A      (-2.83,2.13)       (2.68,2.09)               N/A
+
+Results saved to /home/lia/toymodel/05.1_asymmetric_nn/sweep_nparticles_t10_ep2000/
+  results.json, replot_data.npz

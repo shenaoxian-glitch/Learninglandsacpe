@@ -22,6 +22,9 @@ Organized by model type (each subfolder is self-contained with all needed .py fi
 | `03.1_asymmetric_potential/` | Asymmetric potential (fixed 2D death) | `train_asym_potential_multi.py`, `sweep_particles.py` |
 | `04_source_death_semi_nn/` | NN Φ + parametric death rate | `train_sd.py` |
 | `05_source_death_nn/` | NN Φ + NN γ(y), multi-timepoint | `train_sd_nn_multi.py` |
+| `05.1_asymmetric_nn/` | NN Φ + fixed 2D death, systematic sweeps | `train_sd_nn_asym_multi.py`, `sweep_*.py` |
+| `06_learnable_source/` | Learnable source (mu_x, mu_y) + NN Φ | `train_learnable_source.py` |
+| `06.1_learnable_source/` | mu_x/Φ degeneracy study (mu_y fixed) | `train_learnable_source_mux.py`, `analyze_distributions.py` |
 
 Shared modules (copied into each subfolder that needs them):
 
@@ -52,7 +55,7 @@ DEATH_PARAMS_2D = {'A': 2.0, 'w_x': 0.5, 'k1': 1.0, 'y_select': 1.0,
 
 ## Current progress
 
-Completed through Step 5a-v (asymmetric potential with fixed 2D death rate).
+Completed through Step 6.1 (source-potential degeneracy study).
 See README.md "Research Roadmap" for full history and next steps.
 
 Key findings:
@@ -65,7 +68,9 @@ Key findings:
   - y-only death rate (γ(y) not γ(x,y)) eliminates x-direction degeneracy
   - Death rate extrapolation (slope too shallow in y>2) remains unsolved
 - Asymmetric potential (e·x term) + fixed 2D death rate works; particle sweep confirms a-c degeneracy is structural not sampling-limited
-- Next: spectral normalization, weight decay, data symmetry augmentation
+- Learnable source mu_x: recoverable when trained alone (error 0.06), but mu_x/Φ co-adapt when trained jointly
+- **Source-potential degeneracy (Step 6.1):** true init mu_x=0 drifts to -0.68 (worst); init=+0.5 → -0.14 (best). Ground truth is an unstable equilibrium — the optimizer actively escapes. All inits converge to mu_x<0.
+- Next: spectral normalization, weight decay, multi-timepoint source learning
 
 ## Conventions
 

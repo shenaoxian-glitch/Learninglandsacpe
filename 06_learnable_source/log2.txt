@@ -1,0 +1,37 @@
+=================================================================
+Model 6: NN potential + learnable source position (mu_x)
+=================================================================
+  N_particles = 2000
+  T_final = 6.0, dt = 0.01, n_steps = 600
+  sigma = 2.5 (fixed, exploration noise)
+  Potential: Phi_nn(2->16->16->1) + exp(b)x^4 + exp(d)y^4 (b,d fixed)
+  Death rate: FIXED 2D analytical
+  Loss = L_MMD + 5.0*L_mass
+
+  True source: mu=(0.0, -1.0), sigma_x=0.25, sigma_y=0.1
+  Init mu_x = 1.0 (true = 0.0)
+  Learnable: Phi_nn weights + mu_x
+  Fixed: mu_y=-1.0, sigma_x=0.25, sigma_y=0.1, death rate, quartic conf
+
+Generating ground-truth snapshot ...
+  t=6.0: mass=727.28, ~1999 alive particles
+  Training queue: 2000 particles, eps pre-sampled
+
+SourceDeathModelWithSource created:
+  Phi_nn: 337 params
+  mu_x: 1 param (init=1.0, true=0.0)
+  Total learnable: 338 params
+  Optimizer: NN=AdamW(lr=0.003), source=Adam(lr=0.05)
+
+Training for 2000 epochs ...
+-----------------------------------------------------------------
+Epoch    0: Loss=1.21659 (MMD=0.26863, Mass=0.18959) mu_x=0.9500
+Epoch   40: Loss=0.40380 (MMD=0.24145, Mass=0.03247) mu_x=-0.2342
+Epoch   80: Loss=0.19366 (MMD=0.19312, Mass=0.00011) mu_x=-0.3617
+Epoch  120: Loss=0.18427 (MMD=0.18138, Mass=0.00058) mu_x=-0.4059
+Epoch  160: Loss=0.15377 (MMD=0.15356, Mass=0.00004) mu_x=-0.0714
+Epoch  200: Loss=0.13292 (MMD=0.13199, Mass=0.00019) mu_x=0.6018
+Epoch  240: Loss=0.10745 (MMD=0.10626, Mass=0.00024) mu_x=1.2035
+Epoch  280: Loss=0.09301 (MMD=0.09277, Mass=0.00005) mu_x=1.6163
+Epoch  320: Loss=0.07581 (MMD=0.07562, Mass=0.00004) mu_x=1.9294
+Epoch  360: Loss=0.05702 (MMD=0.05699, Mass=0.00001) mu_x=2.1236

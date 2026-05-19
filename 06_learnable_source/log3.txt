@@ -1,0 +1,87 @@
+=================================================================
+Model 6: NN potential + learnable source position (mu_x)
+=================================================================
+  N_particles = 2000
+  T_final = 6.0, dt = 0.01, n_steps = 600
+  sigma = 2.5 (fixed, exploration noise)
+  Potential: Phi_nn(2->16->16->1) + exp(b)x^4 + exp(d)y^4 (b,d fixed)
+  Death rate: FIXED 2D analytical
+  Loss = L_MMD + 5.0*L_mass
+
+  True source: mu=(0.0, -1.0), sigma_x=0.25, sigma_y=0.1
+  Init mu_x = 1.0 (true = 0.0)
+  Learnable: Phi_nn weights + mu_x
+  Fixed: mu_y=-1.0, sigma_x=0.25, sigma_y=0.1, death rate, quartic conf
+
+Generating ground-truth snapshot ...
+  t=6.0: mass=727.28, ~1999 alive particles
+  Training queue: 2000 particles, eps pre-sampled
+
+SourceDeathModelWithSource created:
+  Phi_nn: 337 params
+  mu_x: 1 param (init=1.0, true=0.0)
+  Total learnable: 338 params
+  Optimizer: NN=AdamW(lr=0.003), source=Adam(lr=0.01)
+
+Training for 2000 epochs ...
+-----------------------------------------------------------------
+Epoch    0: Loss=1.21659 (MMD=0.26863, Mass=0.18959) mu_x=0.9900
+Epoch   40: Loss=0.43242 (MMD=0.24778, Mass=0.03693) mu_x=0.6187
+Epoch   80: Loss=0.19203 (MMD=0.19076, Mass=0.00025) mu_x=0.4932
+Epoch  120: Loss=0.16946 (MMD=0.16832, Mass=0.00023) mu_x=0.4947
+Epoch  160: Loss=0.14278 (MMD=0.14247, Mass=0.00006) mu_x=0.5491
+Epoch  200: Loss=0.13540 (MMD=0.13441, Mass=0.00020) mu_x=0.6427
+Epoch  240: Loss=0.11832 (MMD=0.11749, Mass=0.00017) mu_x=0.7507
+Epoch  280: Loss=0.10964 (MMD=0.10959, Mass=0.00001) mu_x=0.8568
+Epoch  320: Loss=0.09564 (MMD=0.09512, Mass=0.00010) mu_x=0.9670
+Epoch  360: Loss=0.07970 (MMD=0.07969, Mass=0.00000) mu_x=1.0595
+Epoch  400: Loss=0.05371 (MMD=0.05371, Mass=0.00000) mu_x=1.1287
+Epoch  440: Loss=0.03561 (MMD=0.03470, Mass=0.00018) mu_x=1.1364
+Epoch  480: Loss=0.02587 (MMD=0.02511, Mass=0.00015) mu_x=1.0713
+Epoch  520: Loss=0.02806 (MMD=0.02684, Mass=0.00024) mu_x=0.9650
+Epoch  560: Loss=0.02569 (MMD=0.02567, Mass=0.00000) mu_x=0.8653
+Epoch  600: Loss=0.02547 (MMD=0.02453, Mass=0.00019) mu_x=0.7560
+Epoch  640: Loss=0.02272 (MMD=0.02272, Mass=0.00000) mu_x=0.6483
+Epoch  680: Loss=0.01890 (MMD=0.01879, Mass=0.00002) mu_x=0.5340
+Epoch  720: Loss=0.01942 (MMD=0.01909, Mass=0.00006) mu_x=0.4564
+Epoch  760: Loss=0.01970 (MMD=0.01860, Mass=0.00022) mu_x=0.3732
+Epoch  800: Loss=0.02019 (MMD=0.01973, Mass=0.00009) mu_x=0.3052
+Epoch  840: Loss=0.01583 (MMD=0.01576, Mass=0.00001) mu_x=0.2537
+Epoch  880: Loss=0.01320 (MMD=0.01280, Mass=0.00008) mu_x=0.2127
+Epoch  920: Loss=0.01336 (MMD=0.01336, Mass=0.00000) mu_x=0.1609
+Epoch  960: Loss=0.01317 (MMD=0.01309, Mass=0.00002) mu_x=0.1127
+Epoch 1000: Loss=0.01379 (MMD=0.01365, Mass=0.00003) mu_x=0.0638
+Epoch 1040: Loss=0.01418 (MMD=0.01239, Mass=0.00036) mu_x=0.0105
+Epoch 1080: Loss=0.01532 (MMD=0.01130, Mass=0.00080) mu_x=-0.0237
+Epoch 1120: Loss=0.00923 (MMD=0.00913, Mass=0.00002) mu_x=-0.0804
+Epoch 1160: Loss=0.00815 (MMD=0.00812, Mass=0.00001) mu_x=-0.1099
+Epoch 1200: Loss=0.00810 (MMD=0.00715, Mass=0.00019) mu_x=-0.1253
+Epoch 1240: Loss=0.00724 (MMD=0.00722, Mass=0.00000) mu_x=-0.1462
+Epoch 1280: Loss=0.00797 (MMD=0.00663, Mass=0.00027) mu_x=-0.1698
+Epoch 1320: Loss=0.00673 (MMD=0.00648, Mass=0.00005) mu_x=-0.1985
+Epoch 1360: Loss=0.00767 (MMD=0.00660, Mass=0.00021) mu_x=-0.2148
+Epoch 1400: Loss=0.00679 (MMD=0.00671, Mass=0.00002) mu_x=-0.2401
+Epoch 1440: Loss=0.00590 (MMD=0.00551, Mass=0.00008) mu_x=-0.2302
+Epoch 1480: Loss=0.00792 (MMD=0.00503, Mass=0.00058) mu_x=-0.2450
+Epoch 1520: Loss=0.00604 (MMD=0.00583, Mass=0.00004) mu_x=-0.2435
+Epoch 1560: Loss=0.00461 (MMD=0.00461, Mass=0.00000) mu_x=-0.2684
+Epoch 1600: Loss=0.00520 (MMD=0.00517, Mass=0.00001) mu_x=-0.2596
+Epoch 1640: Loss=0.00508 (MMD=0.00461, Mass=0.00010) mu_x=-0.2534
+Epoch 1680: Loss=0.00540 (MMD=0.00485, Mass=0.00011) mu_x=-0.2628
+Epoch 1720: Loss=0.00482 (MMD=0.00481, Mass=0.00000) mu_x=-0.2681
+Epoch 1760: Loss=0.00564 (MMD=0.00504, Mass=0.00012) mu_x=-0.2462
+Epoch 1800: Loss=0.00589 (MMD=0.00565, Mass=0.00005) mu_x=-0.2448
+Epoch 1840: Loss=0.00548 (MMD=0.00442, Mass=0.00021) mu_x=-0.2728
+Epoch 1880: Loss=0.00687 (MMD=0.00529, Mass=0.00031) mu_x=-0.2464
+Epoch 1920: Loss=0.00432 (MMD=0.00387, Mass=0.00009) mu_x=-0.2360
+Epoch 1960: Loss=0.00669 (MMD=0.00466, Mass=0.00041) mu_x=-0.2497
+Restored best model from epoch 1847 (loss=0.003205)
+
+Final mu_x = -0.2603 (true = 0.0, init = 1.0, error = 0.2603)
+Model saved to trained_model_learnable_source.eqx
+
+Done. Figures saved:
+  training_learnable_source.png
+  force_field_learnable_source.png
+  landscape_learnable_source.png
+  snapshots_learnable_source.png
