@@ -368,13 +368,21 @@ toymodel/
 │   ├── resume_training.py             #   Checkpoint-based training resumption
 │   └── models/, training/, simulator/ #   Shared modules
 │
-└── 06.1_learnable_source/            # Learnable mu_x + NN Φ: degeneracy study
-    ├── train_learnable_source_mux.py  #   mu_x only (mu_y fixed), N=3000, T=10
-    ├── analyze_distributions.py       #   Distribution diagnostics (7 plots)
-    ├── models/, training/, simulator/ #   Shared modules
-    ├── init_mux_0.5/                  #   Init mu_x=+0.5 → converges to -0.14
-    ├── init_mux_neg0.5/               #   Init mu_x=-0.5 → converges to -0.22
-    └── init_mux_0.0/                  #   Init mu_x=0.0 (true) → drifts to -0.68
+├── 06.1_learnable_source/            # Learnable mu_x + NN Φ: degeneracy study
+│   ├── train_learnable_source_mux.py  #   mu_x only (mu_y fixed), N=3000, T=10
+│   ├── analyze_distributions.py       #   Distribution diagnostics (7 plots)
+│   ├── models/, training/, simulator/ #   Shared modules
+│   ├── init_mux_0.5/                  #   Init mu_x=+0.5 → converges to -0.14
+│   ├── init_mux_neg0.5/               #   Init mu_x=-0.5 → converges to -0.22
+│   └── init_mux_0.0/                  #   Init mu_x=0.0 (true) → drifts to -0.68
+│
+└── 07_death_wall/                    # Death-wall regime: no y^4 confinement, transient dynamics
+    ├── plan.md                        #   Experiment plan (sigma, N, epochs, capacity)
+    ├── train_death_wall.py            #   Baseline NN(16,16), 337 params
+    ├── train_death_wall_32_32.py      #   Wider NN(32,32), 1153 params
+    ├── train_death_wall_16_32_32_16.py #  Deeper NN(16,32,32,16), 1825 params
+    ├── nn_32_32/, nn_16_32_32_16/     #   Per-capacity training outputs
+    └── sweep_nparticles_Ntgt12000/    #   N-sweep (400–8000) × 9 seeds: loss vs identifiability
 ```
 
 **Shared modules** (copied into each subfolder that needs them):
@@ -412,6 +420,7 @@ toymodel/
 | Learnable source position | ✅ Done | `06_*/` — mu_x recoverable (error 0.06); joint mu_x+mu_y has slow mu_y convergence due to potential-source degeneracy |
 | Source-potential degeneracy study | ✅ Done | `06.1_*/` — mu_x/Φ degeneracy: true init (mu_x=0) drifts to -0.68; all inits converge to mu_x<0. Unstable equilibrium at ground truth |
 | N_learned/N_target sweeps (T=10) | ✅ Done | `05.1_*/sweep_nparticles_fixed_*`, `sweep_ntarget_fixed_*` — N_learned=3000 sufficient; N_target saturates at ~4500 |
+| Death-wall regime (no y⁴) | ✅ Done | `07_*/` — transient dynamics; (16,16) insufficient even at N=8000; (32,32) recovers landscape. Capacity vs. data analysis: dynamic range + optimization ruggedness + identifiability |
 | Regional mass matching | ⚠️ Ineffective | data sparsity in y>2 prevents y_c/k degeneracy breaking |
 | Spectral normalization | 🔲 Planned | Lipschitz constraint on NN weights |
 | Weight decay tuning | 🔲 Planned | Stronger L2 to bias toward smooth mappings |
@@ -1522,6 +1531,108 @@ for mu_x.
 > (a) regularization on Φ (smoothness, spectral norm) to make compensation costly,
 > (b) multi-timepoint matching to exploit different transient sensitivities, or
 > (c) architectural constraints that decouple source position from potential shape.
+
+**Step 7 — Death-wall regime: transient (non-ergodic) dynamics**
+
+All previous steps used a y⁴ confinement term that traps particles in wells,
+producing approximately ergodic dynamics. Step 7 removes y⁴ entirely: particles
+take a one-way trip from the source to a death wall at large y. Ground truth:
+
+$$H = -(y-a)x^2 + \exp(b)x^4 - cy + e\,x$$
+
+with parameters `a=-1, b=-1.6, c=3.5, e=0.7, sigma=1.0` and an exponential
+death rate `γ(y) = A · softplus(k·(y - y_d))` with `A=0.1, k=5, y_d=2`. This
+mirrors common real-data settings where cell populations transit through a
+landscape and die rather than equilibrate in basins.
+
+> **Implementation notes (2026-05-22):**
+>
+> Created `07_death_wall/` with three training scripts at fixed
+> N_learned=3000 / N_target=6000 / σ=1.0 / 2000 epochs and varying NN width:
+> `train_death_wall.py` (16,16), `train_death_wall_32_32.py` (32,32),
+> `train_death_wall_16_32_32_16.py` (deeper). Source and death rate fixed at
+> ground truth. Also ran a particle sweep `sweep_nparticles_Ntgt12000/` over
+> N_learned ∈ {400, 600, 900, 1300, 1900, 2700, 3900, 5500, 8000} with 9 seeds.
+>
+> **Capacity comparison (fixed N=3000):**
+>
+> | NN | Best loss | Landscape quality |
+> |----|-----------|-------------------|
+> | (16,16), 337 params | High | Valleys mispositioned, force field weak at large \|x\| |
+> | (32,32), 1153 params | Low | Valleys recovered, asymmetry correct |
+> | (16,32,32,16), 1825 params | 0.0054 | Best; matches deep-valley dynamic range |
+>
+> **N-sweep at (16,16) + σ=1.5 (step1b settings):**
+>
+> | N_learned | Mean best loss | Asym error (y=1.5) |
+> |-----------|---------------:|-------------------:|
+> | 400 | 0.0220 | 0.06 |
+> | 600 | 0.0189 | 10.27 |
+> | 1300 | 0.0110 | 7.85 |
+> | 1900 | 0.0058 | 2.09 |
+> | 3900 | 0.0034 | 1.65 |
+> | 8000 | 0.0027 | 0.75 |
+>
+> Loss decreases monotonically (~8× from N=400 to N=8000) but qualitative
+> valley asymmetry recovery is **non-monotonic** — different N values land in
+> different basins of the loss surface.
+>
+> **Key findings — capacity vs. data:**
+>
+> 1. **Increasing NN capacity (16→32) fixes the landscape; increasing N alone
+>    does not.** This contradicts the naive view that more particles should
+>    suffice for a universal approximator.
+>
+> 2. **Three contributing reasons:**
+>    - **Dynamic range.** Without y⁴ confinement, particles traverse up to
+>      y≈2 before dying and the true \|Φ\| reaches ~15 (vs ~5 in the wells
+>      regime). A (16,16) softplus net has limited expressivity for steep,
+>      deep valley walls.
+>    - **Optimization landscape ruggedness.** In ergodic wells the density is
+>      a smooth Boltzmann functional of Φ; in transit-only regimes the
+>      snapshot depends on path integrals through Φ and the parameter-loss
+>      surface becomes highly non-convex. Over-parameterization is a
+>      classical regularizer that smooths this surface — more capacity ⇒
+>      better minima for the same N. More particles only reduces stochastic
+>      gradient noise.
+>    - **Information geometry.** Dead particles carry no gradient signal in
+>      the death zone; surviving particles concentrate in a narrow transit
+>      channel. Adding N improves coverage on the channel but does not
+>      constrain Φ where no particles ever go — this is an **identifiability**
+>      limit that neither capacity nor more data can break.
+>
+> 3. **Capacity is a cure for expressivity and non-convex optimization,
+>    not for identifiability.** When capacity helps and N does not, suspect
+>    optimization. When neither helps, suspect identifiability — fix it with
+>    inductive bias (explicit `c_x4` wrapper), multi-timepoint matching, or
+>    regularization (spectral norm, weight decay).
+
+**Step 7 (analysis) — NN requirements as a function of each axis**
+
+A unified table compiling lessons from Steps 1–7. Each row gives the
+dominant bottleneck when that knob is changed and the right intervention.
+
+| Axis | Regime change | Dominant bottleneck | Right fix |
+|------|--------------|---------------------|-----------|
+| Target Φ shape | More basins / higher polynomial degree | Function-class expressivity | Depth > width; (16,32,32,16) > (32,32) |
+| Target Φ range | Larger \|Φ\| (no confinement) | Output dynamic range | Wider final layers, or explicit confinement wrapper |
+| Asymmetry (e·x) | Tilted potential | None — trivial | Any architecture |
+| Death rate | γ(y) sharp / particles die fast | Identifiability outside data support | Regularization, **not** capacity |
+| Death rate | γ(x,y) (2D) | Mild — richer 2D signal | Slightly more capacity |
+| Death rate | γ jointly learned | γ/Φ degeneracy | Multi-timepoint or priors |
+| Sigma | σ too high | Distribution Gaussian-ified | Lower capacity (avoid overfitting noise) |
+| Sigma | σ too low | Particles stick to deterministic streamlines → narrow support | More N **or** inductive bias |
+| Confinement (in learning) | Exact wrapper provided | None — residual is low-degree | (16,16) suffices |
+| Confinement | None (transit-only) | Narrow support + optimization ruggedness | More capacity + wrapper |
+| Source position | Inside basin | None — ergodic sampling | Low capacity OK |
+| Source position | Far from basins (transient) | Narrow transit bundle | Capacity + multi-timepoint |
+| Source position | Learnable μ | μ/Φ degeneracy | Architecture or multi-timepoint, **not** capacity |
+| Multiple sources | Richer initial distribution | Easier than single source | Reduces capacity requirement |
+
+**Unifying principle:** capacity addresses two distinct problems — function
+expressivity and non-convex optimization. It does **not** address
+identifiability or data support. The right intervention depends on which
+of the three is the limiting factor.
 
 **Step 5b — Synthetic benchmark: binary choice + proliferation**
 
